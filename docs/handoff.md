@@ -2,8 +2,8 @@
 
 **Purpose:** Everything a new model (or engineer) needs to continue without re-deriving context. Read this first, then the sources below. If this file and the code disagree, the code and the canonical PRD win — flag the drift in [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md).
 
-**Last updated:** 2026-10-27, after Phase 01 verification.
-**Workspace:** `/Users/jsaxena/Documents/devspace-ai`
+**Last updated:** 2026-10-28, after Phase 01 was committed on `feat/01-foundation`.
+**Workspace:** `/Users/jsaxena/Documents/devspace-ai` · **Branch:** `feat/01-foundation`
 
 ---
 
@@ -33,8 +33,10 @@ Demo journey: `Onboard → sprint → text chat → voice standup → confirm bl
 | **Phase 01 (foundation, DB, auth)** | **DONE and verified** (see §7) |
 | API preflight (Meta runtime check) | NOT STARTED — needs user-supplied credentials/docs |
 | Phases 02–12 | NOT STARTED |
-| Git | **`main` has zero commits; every file is untracked.** Nothing has been committed. Do not commit/push unless the user asks. |
+| Git | `main` = [3e39603](https://github.com/coderjks/devspace-ai/commit/3e39603792f3d2c171e74ecaae2d730e9e2b031d) (docs only). Current branch `feat/01-foundation` = [97290ee](https://github.com/coderjks/devspace-ai/commit/97290ee38dd9d7c433f19e6d85ee89f2cbe47bcf) (Phase 01, 51 files). Working tree clean at last check. **Not pushed.** Do not commit/push unless the user asks. |
 | Running servers | None. All verification servers were stopped (see §9 pitfall on macOS). |
+
+**Model switch (planned):** The user intends to continue with **Muse Spark 1.3** as the coding-IDE model (playbook recommends Spark for API preflight and Phase 02). IDE model ≠ runtime Meta model. On switch, start a new session **in this workspace on `feat/01-foundation`**, paste the starter prompt in §12, and require the new model to restate the gate before writing code.
 
 **Rule:** Do not start API preflight or Phase 02 until the user explicitly instructs it. Each phase ends with the playbook verification prompt, a progress update, and a stop. Never implement two phases in one turn.
 
@@ -158,8 +160,21 @@ Full list: progress §5. Curriculum invariant: exactly six tickets (AI-001–AI-
 
 ## 12. Instructions for the incoming model
 
-1. Start by reading §1 in order. Inspect the code before changing anything; preserve Phase 01 APIs and tests.
+1. Start by reading §1 in order. Confirm you are on `feat/01-foundation` at [97290ee](https://github.com/coderjks/devspace-ai/commit/97290ee38dd9d7c433f19e6d85ee89f2cbe47bcf) (`git branch -v`, `git status`). Inspect the code before changing anything; preserve Phase 01 APIs and tests.
 2. State the current gate back to the user and wait if no phase was explicitly requested. Implement only the requested phase, run its tests/lint/type checks, update [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md) (checklist, integration status, change log) and this handoff if state changed, then stop.
 3. Never hardcode unverified Meta/GitHub/speech endpoints, IDs, or prices. Label every integration honestly.
-4. Do not commit, push, or rewrite git history unless the user asks. The repo still has zero commits — the first commit is the user's call.
+4. Do not commit, push, or rewrite git history unless the user asks.
 5. Keep the app runnable after your phase. Prefer a verified vertical slice over a large unverified dump.
+
+**Starter prompt (user: paste this as the first message after switching to Muse Spark 1.3):**
+
+```text
+Read docs/handoff.md first, then AGENTS.md, docs/progress.md,
+docs/prd/requirements.md, and the API preflight + Phase 02 sections of
+docs/prompts/build-playbook.md. You are on branch feat/01-foundation;
+Phase 01 is done and verified (14 tests pass). Restate the current gate,
+integration status, and what you will implement next. Do not start
+coding until I confirm. Do not assume any Meta endpoint or model ID.
+```
+
+If you cannot restate the Phase 01 state from §3 and §7 of this file, context did not transfer — say so and stop before writing code. Also update this file and [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md) in the same change whenever branch, HEAD, gate, or integration status moves.
