@@ -1,0 +1,74 @@
+# --- Secrets & environment (keep .env.example) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
+
+# --- Editor / IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+.history/
+
+# --- Python ---
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.tox/
+.nox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+coverage/
+.pyre/
+
+# --- Local databases / runtime data ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Node / Next.js (web/) ---
+node_modules/
+.next/
+out/
+.turbo/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+
+# --- Test / coverage output ---
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+
+# --- Logs & caches ---
+*.log
+.cache/
