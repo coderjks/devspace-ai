@@ -1,9 +1,9 @@
 # DevSpace AI — Progress Tracker
 
-**Last updated:** 2026-10-28 (Phase 01 committed on feat/01-foundation; ready for model switch)
+**Last updated:** 2026-10-28 (Phase 02 committed on feat/02-onboarding-board; CORS fix verified live)
 **Canonical PRD:** `docs/prd/requirements.md` v2.2.1
 **Execution order:** `docs/prompts/build-playbook.md` v2.2.1
-**Gate state:** Phase 01 DONE and verified. Awaiting approval for API preflight / Phase 02. Do not start the next phase without explicit instruction.
+**Gate state:** Phase 02 DONE, verified and committed on `feat/02-onboarding-board`. API preflight still NOT STARTED (needs Meta credentials). Do not start Phase 03 without explicit instruction.
 **Handoff:** New models/engineers start at [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md), then read this file.
 
 ---
@@ -108,18 +108,18 @@ Voice: `POST /api/voice/sessions`, `POST /api/voice/sessions/{id}/turns`, `POST 
 
 | Area | Implementation | Status |
 |---|---|---|
-| `web/` | Next.js 14 + TS + Tailwind + shadcn/ui (Button/Input/Card), `/`, `/login`, `/dashboard` (persisted sprint list) | **DONE** — `npm run build` + `typecheck` pass |
-| `api/` | FastAPI modular monolith: `app/config, database, models, security, schemas, dependencies, seed`, routers `health/auth/projects`, Alembic `20261027_0001` | **DONE** |
+| `web/` | Next.js 14 + TS + Tailwind + shadcn/ui: `/`, `/login`, `/onboarding`, `/dashboard`, `/board` (Kanban), `/tasks/[id]`, `/team`, `/roadmap`, `/progress` + shared `SiteHeader` | **DONE** — `npm run build` + `typecheck` pass |
+| `api/` | FastAPI modular monolith: Phase 01 modules + routers `users/enrollments/diagnostics/tasks/progress/roadmap/team`, shared `task_view`; Alembic `20261027_0001` → `20261028_0002` | **DONE** |
 | `worker/` | Redis ping stub (no jobs; Phase 06) | DONE (stub) |
-| `curriculum/` | `sprint-01.json`: support-backend project + AI-001–AI-006 with dependencies/rubrics | DONE |
+| `curriculum/` | `sprint-01.json` + `roadmap-12wk.json` (12 weeks, week 1 active) | DONE |
 | `infra/` | `docker-compose.yml`: postgres:16, redis:7, api, worker, web; `${POSTGRES_PORT:-5432}`/`${REDIS_PORT:-6379}`; `config` validates | DONE |
-| `tests/` | `tests/api/` 14 tests (health, auth, projects/ownership, seed/migrations) | DONE — 14 passed |
-| `docs/architecture/` | `README.md` ADR-001–005 | DONE |
+| `tests/` | `tests/api/` 32 tests (Phase 01 suite + enrollment/onboarding, transitions, workplace, onboarding columns) | DONE — 32 passed |
+| `docs/architecture/` | `README.md` ADR-001–007 | DONE |
 | `docs/handoff.md` | Model-switch handoff: read order, run commands, pitfalls, gate | DONE |
 | `.env.example` / `README.md` | Typed template (direct vs pooled DB notes) + setup commands | DONE |
-| Database / migrations | Alembic upgrade/downgrade cycle verified on SQLite and Postgres 16 (Docker, port 5433); 11 tables | DONE |
-| Auth | Register/login/logout, httpOnly cookie + Bearer, `GET /api/auth/me`, owner-scoped enrollments; PBKDF2-SHA256 + HS256 JWT | DONE |
-| Git history | `main` = `3e39603` (docs only); `feat/01-foundation` = `97290ee` (Phase 01, 51 files); working tree clean at handoff update | COMMITTED (not pushed) |
+| Database / migrations | Alembic `0001`→`0002` upgrade verified on Postgres 16 (Docker, port 5433); enrollments carry `experience_level` + `diagnostic_result`; 11 tables | DONE |
+| Auth | Register/login/logout, httpOnly cookie + Bearer, `GET /api/auth/me`, `PATCH /api/users/me`, owner-scoped enrollments; PBKDF2-SHA256 + HS256 JWT | DONE |
+| Git history | `main` = `3e39603` (docs only); `feat/01-foundation` = `ac23eb3` (Phase 01 + handoff); `feat/02-onboarding-board` = `5cc676e` (Phase 02, 31 files) + docs update | COMMITTED (not pushed) |
 
 ---
 
@@ -132,7 +132,7 @@ Status key: `DONE` verified · `IN PROGRESS` · `NOT STARTED` · `BLOCKED` (name
 | **Prompt 00** — Orientation & guardrails | Read PRD/playbook/AGENTS.md, inventory repo, write this tracker, propose Phase 01, stop | This file exists; no features implemented | **DONE** (this pass) |
 | **API preflight** — Validate runtime model access | Inspect Meta docs + credentials; server-side smoke test; verify base URL, auth, model IDs, structured output/tool calling, streaming, limits/pricing; mock mode if unverifiable; stop | Observed provider response or documented `BLOCKED` with exact missing config; no frontend keys | **NOT STARTED** — no credentials supplied |
 | **Phase 01** — Foundation, DB, auth | Monorepo scaffold, Docker Compose PG+Redis, typed config, health checks, `.env.example`, Alembic models (User…ActivityEvent), seed demo project + AI-001–AI-006, email/password auth + logout + protected routes, auth/migration/ownership tests. No AI/voice/GitHub. | Sign in; fetch authenticated student; fetch persisted seeded project; restart retains data | **DONE** — verified §9 |
-| **Phase 02** — Onboarding, dashboard, board | Onboarding, enrollment, dashboard, team directory, 12-week roadmap (one full sprint), Kanban + task detail, progress view; backend-enforced transitions; students cannot mark evaluated tasks Done | Enroll → open ticket → start work → persisted dashboard updates | NOT STARTED |
+| **Phase 02** — Onboarding, dashboard, board | Onboarding (profile, experience, goals, diagnostic), enrollment, dashboard, team directory, 12-week roadmap (one full sprint), Kanban + task detail, progress view; backend-enforced transitions; students cannot mark evaluated tasks Done | Enroll → open ticket → start work → persisted dashboard updates | **DONE** — verified §10 |
 | **Phase 03** — Runtime provider + six-role orchestration | Typed `LLMProvider` + Meta adapter (verified IDs only) with explicit mock; `AgentOrchestrator`, six role configs, scoped tools, shared context, separate conversations, usage logging, chat endpoints + UI | Tech Lead discusses current task; Scrum Master knows sprint status; context persists | NOT STARTED |
 | **Phase 04** — Standups & role tools | Role-specific tools; standup flow (ask → typed summary → proposed changes → confirm → persist blocker + audit, idempotent); blocker visible to Tech Lead. Text only. | Confirmed blocker on board + in Tech Lead conversation | NOT STARTED |
 | **Phase 05** — GitHub App & PRs | Least-privilege App install, repo linking, short-lived tokens, HMAC webhook on raw body, PR opened/synchronize/reopened/closed, delivery/repo/PR/SHA/task persistence, dedupe, UI status. No code execution yet. | Real PR maps to correct task; push updates SHA; duplicate webhook is no-op | NOT STARTED |
@@ -220,6 +220,8 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-10-27 | Phase 01 implemented on `go`: `docs/prompt/`→`docs/prompts/`, monorepo + auth + seed + migrations + tests. Verified (§9). Awaiting approval for API preflight / Phase 02. |
 | 2026-10-27 | Added [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md) for model switching (read order, verified run/test commands, integration status, pitfalls, security boundaries, next-gate rules). No feature changes; no commits. |
 | 2026-10-28 | First commits created: `main` `3e39603` docs-only (`docs:`), then branch `feat/01-foundation` `97290ee` (`feat(foundation):`, 51 Phase 01 files; 14 tests re-verified before commit). Working tree clean. Not pushed. Prepared for Muse Spark 1.3 model switch — see handoff §3/§12 for the starter prompt. |
+| 2026-10-28 | Branch `feat/02-onboarding-board` created from `feat/01-foundation`; Phase 02 implemented (enrollment/onboarding API, transitions, progress, roadmap, team; 6 new pages) and verified (§10). Committed as `5cc676e` (`feat(onboarding):`, 31 files). API preflight still pending. |
+| 2026-10-28 | Local setup run for user review (Docker Postgres/Redis, migrated + seeded, API :8000, web :3000). Fixed browser login failure by allowing both `localhost:3000` and `127.0.0.1:3000` CORS origins; demo login verified live. |
 
 ---
 
@@ -243,3 +245,26 @@ Commands run in this session; exit statuses observed, not assumed.
 | Compose | `docker compose config` | Valid |
 
 **Known limitations:** Docker full-stack (`up --build` for api/web/worker images) was not run end-to-end (only Postgres/Redis containers + host API/Web were exercised). Host Postgres on :5432 belongs to another stack and was not touched; our Compose defaults remain :5432/:6379 with port overrides. Local servers were stopped after verification — this macOS host cannot detach a durable server (`setsid` unavailable), so nothing is left running. Browser interaction (click-through login) was verified via HTTP + build, not a real browser. (Commits were created afterwards — see change log 2026-10-28.)
+
+---
+
+## 10. Phase 02 verification evidence (2026-10-28, branch `feat/02-onboarding-board`)
+
+Commands run in this session; exit statuses observed, not assumed.
+
+| Check | Command | Result |
+|---|---|---|
+| API tests | `DATABASE_URL=sqlite… .venv/bin/python -m pytest tests/ -q` | **32 passed** (Phase 01 suite + enrollment/onboarding, transitions, workplace, onboarding columns) |
+| Lint | `.venv/bin/ruff check api/app/ tests/` | All checks passed (after `--fix` import sort) |
+| Types (API) | `.venv/bin/mypy api/app/ --ignore-missing-imports` | Success, 22 files |
+| Alembic (Postgres) | Compose Postgres 16 on `POSTGRES_PORT=5433` + `alembic upgrade head` | `20261027_0001 → 20261028_0002` clean; seed ×2 idempotent |
+| Live E2E | Fresh user: register → enroll → diagnostic (4 questions) → task detail → `todo→in_progress` → progress/roadmap/team | Enroll OK; 3 criteria shown; transition `in_progress`; progress `total 6, started 1`; 12 weeks; 6 members; `→approved` rejected 409 |
+| Transition guards | Live + tests: locked task, `approved` target, unknown status, unauthenticated | 409 / 409 / 422 / 401 as designed; `approved` error names evaluation |
+| Restart persistence | Kill + restart API, re-login as demo | Enrollments 1, tasks 6 retained; AI-001 restored to `todo` |
+| Web types/build | `npm run typecheck`, `npm run build` (in `web/`) | Both pass; routes `/`, `/login`, `/onboarding`, `/dashboard`, `/board`, `/team`, `/roadmap`, `/progress`, `/tasks/[id]` |
+| Web+API smoke | Next `start` :3000 + API :8000, `curl` all routes | All 8 routes 200 |
+| Compose | `docker compose config` | Valid |
+
+**Acceptance:** Enroll → open ticket → start work → persisted dashboard updates ✓ (verified live with a fresh user).
+
+**Known limitations:** Diagnostic answers are a fixed server-side set (calibration only, not proctored). Team directory is static content (chat arrives in Phase 03). No Vitest suite yet — web covered by `typecheck` + `build` (Q10 partial). Full-Compose image stack still `UNTESTED`. Servers stopped after verification; nothing running. Phase 02 uncommitted on `feat/02-onboarding-board`.

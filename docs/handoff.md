@@ -2,8 +2,8 @@
 
 **Purpose:** Everything a new model (or engineer) needs to continue without re-deriving context. Read this first, then the sources below. If this file and the code disagree, the code and the canonical PRD win — flag the drift in [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md).
 
-**Last updated:** 2026-10-28, after Phase 01 was committed on `feat/01-foundation`.
-**Workspace:** `/Users/jsaxena/Documents/devspace-ai` · **Branch:** `feat/01-foundation`
+**Last updated:** 2026-10-28, after Phase 02 was committed on `feat/02-onboarding-board`.
+**Workspace:** `/Users/jsaxena/Documents/devspace-ai` · **Branch:** `feat/02-onboarding-board`
 
 ---
 
@@ -31,14 +31,13 @@ Demo journey: `Onboard → sprint → text chat → voice standup → confirm bl
 |---|---|
 | Prompt 00 (orientation) | DONE |
 | **Phase 01 (foundation, DB, auth)** | **DONE and verified** (see §7) |
+| **Phase 02 (onboarding, board)** | **DONE, verified and committed** (`5cc676e`; see progress §10) |
 | API preflight (Meta runtime check) | NOT STARTED — needs user-supplied credentials/docs |
-| Phases 02–12 | NOT STARTED |
-| Git | `main` = [3e39603](https://github.com/coderjks/devspace-ai/commit/3e39603792f3d2c171e74ecaae2d730e9e2b031d) (docs only). Current branch `feat/01-foundation` = [97290ee](https://github.com/coderjks/devspace-ai/commit/97290ee38dd9d7c433f19e6d85ee89f2cbe47bcf) (Phase 01, 51 files). Working tree clean at last check. **Not pushed.** Do not commit/push unless the user asks. |
-| Running servers | None. All verification servers were stopped (see §9 pitfall on macOS). |
+| Phases 03–12 | NOT STARTED |
+| Git | `main` = `3e39603` (docs only). `feat/01-foundation` = `ac23eb3` (Phase 01 + handoff). Current branch `feat/02-onboarding-board` = `5cc676e` (Phase 02) + this docs update. **Not pushed.** Do not commit/push unless the user asks. |
+| Running servers | Local review stack was running (API :8000, web :3000, Docker Postgres/Redis) for user verification; CORS fixed to allow both `localhost:3000` and `127.0.0.1:3000` origins. Servers live only for this session (see §9 pitfall on macOS). |
 
-**Model switch (planned):** The user intends to continue with **Muse Spark 1.3** as the coding-IDE model (playbook recommends Spark for API preflight and Phase 02). IDE model ≠ runtime Meta model. On switch, start a new session **in this workspace on `feat/01-foundation`**, paste the starter prompt in §12, and require the new model to restate the gate before writing code.
-
-**Rule:** Do not start API preflight or Phase 02 until the user explicitly instructs it. Each phase ends with the playbook verification prompt, a progress update, and a stop. Never implement two phases in one turn.
+**Rule:** Do not start API preflight or Phase 03 until the user explicitly instructs it. Each phase ends with the playbook verification prompt, a progress update, and a stop. Never implement two phases in one turn.
 
 ## 4. What Phase 01 delivered
 
@@ -54,6 +53,8 @@ Monorepo, runnable end to end locally. No AI, voice, or GitHub code (scope exclu
 - **Infra** ([infra/docker-compose.yml](/Users/jsaxena/Documents/devspace-ai/infra/docker-compose.yml)): `postgres:16-alpine`, `redis:7-alpine`, `api`, `worker`, `web`. Host ports parameterised (`${POSTGRES_PORT:-5432}`, `${REDIS_PORT:-6379}`).
 - **Tests:** [tests/api/](/Users/jsaxena/Documents/devspace-ai/tests/api/conftest.py) — 14 pytest tests (health, auth, ownership, seed/migration). See §7.
 - **Docs:** [.env.example](/Users/jsaxena/Documents/devspace-ai/.env.example) (placeholders only), [README.md](/Users/jsaxena/Documents/devspace-ai/README.md), architecture ADRs.
+
+Phase 02 added (branch `feat/02-onboarding-board`, uncommitted): `POST /api/enrollments` (idempotent) + `PATCH /api/users/me` + diagnostics (`GET /api/diagnostics/questions` without answers, `POST /api/diagnostics/attempts` scored server-side and saved to the enrollment); task detail `GET /api/tasks/{id}` and `POST /api/tasks/{id}/transitions` with an allowlist (`todo↔in_progress` only — `approved`, locked, and unknown targets rejected); `GET /api/progress` derived from persisted state; `GET /api/roadmap` (12 weeks from `curriculum/roadmap-12wk.json` + live sprint); `GET /api/team` (static directory, chat in Phase 03); migration `20261028_0002` (`experience_level`, `diagnostic_result`); frontend `/onboarding`, `/board`, `/tasks/[id]`, `/team`, `/roadmap`, `/progress` + shared `SiteHeader`; 18 new API tests (32 total). Full evidence in [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md) §10.
 
 ## 5. File map (where things live)
 
@@ -154,13 +155,12 @@ Full list: progress §5. Curriculum invariant: exactly six tickets (AI-001–AI-
 ## 11. What remains (in playbook order)
 
 - **API preflight** (needs user credentials): verify Meta base URL/auth/model IDs/structured output/limits with a server-side smoke test; otherwise ship a typed `LLMProvider` + explicit `MOCK`. Then stop.
-- **Phase 02:** onboarding, enrollment, dashboard, team directory, 12-week roadmap, Kanban + task detail, backend-enforced transitions.
 - **Phase 03:** `LLMProvider` + orchestrator, six role configs, chat. **Phase 04:** standups + confirmed blockers. **Phase 05:** GitHub App + webhook. **Phase 06:** sandbox evaluation + AI review. **Phase 07:** deterministic unlock + remediation + hints. **Phase 08:** voice infra. **Phase 09:** voice standups. **Phase 10:** progress polish. **Phase 11:** E2E security/reliability + `docs/qa-report.md`. **Phase 12:** deployment + demo.
 - Open questions (progress §6): Q2 Meta access, Q3 STT/TTS providers, Q5 sandbox strategy, Q6 GitHub App ownership, Q7 deployment target, Q10 web test stack (Vitest/Playwright not yet added). Q1/Q4/Q8/Q9 are resolved.
 
 ## 12. Instructions for the incoming model
 
-1. Start by reading §1 in order. Confirm you are on `feat/01-foundation` at [97290ee](https://github.com/coderjks/devspace-ai/commit/97290ee38dd9d7c433f19e6d85ee89f2cbe47bcf) (`git branch -v`, `git status`). Inspect the code before changing anything; preserve Phase 01 APIs and tests.
+1. Start by reading §1 in order. Confirm you are on `feat/02-onboarding-board` (`git branch -v`, `git status`). Inspect the code before changing anything; preserve Phase 01–02 APIs and tests.
 2. State the current gate back to the user and wait if no phase was explicitly requested. Implement only the requested phase, run its tests/lint/type checks, update [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md) (checklist, integration status, change log) and this handoff if state changed, then stop.
 3. Never hardcode unverified Meta/GitHub/speech endpoints, IDs, or prices. Label every integration honestly.
 4. Do not commit, push, or rewrite git history unless the user asks.
@@ -170,9 +170,9 @@ Full list: progress §5. Curriculum invariant: exactly six tickets (AI-001–AI-
 
 ```text
 Read docs/handoff.md first, then AGENTS.md, docs/progress.md,
-docs/prd/requirements.md, and the API preflight + Phase 02 sections of
-docs/prompts/build-playbook.md. You are on branch feat/01-foundation;
-Phase 01 is done and verified (14 tests pass). Restate the current gate,
+docs/prd/requirements.md, and the API preflight + Phase 03 sections of
+docs/prompts/build-playbook.md. You are on branch feat/02-onboarding-board;
+Phases 01–02 are done and verified (32 tests pass). Restate the current gate,
 integration status, and what you will implement next. Do not start
 coding until I confirm. Do not assume any Meta endpoint or model ID.
 ```
