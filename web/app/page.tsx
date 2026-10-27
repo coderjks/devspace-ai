@@ -14,15 +14,18 @@ export default function HomePage() {
       </p>
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Phase 01 — Foundation ready</CardTitle>
-          <CardDescription>Sign in with the seeded demo account to fetch the persisted sprint.</CardDescription>
+          <CardTitle>Start your internship</CardTitle>
+          <CardDescription>Sign in, complete onboarding, and open your first ticket.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Button asChild>
             <Link href="/login">Sign in</Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/onboarding">Onboarding</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/board">Sprint board</Link>
           </Button>
         </CardContent>
       </Card>

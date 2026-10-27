@@ -84,9 +84,80 @@ class EnrollmentOut(BaseModel):
     track: str
     status: str
     skill_level: str
+    experience_level: str | None = None
     goals: str | None
+    diagnostic_result: dict | None = None
 
     model_config = {"from_attributes": True}
+
+
+class EnrollmentCreate(BaseModel):
+    track: str = Field(default="applied-ai-engineering", max_length=100)
+    skill_level: str = Field(default="beginner", max_length=50)
+    experience_level: str | None = Field(default=None, max_length=50)
+    goals: str | None = Field(default=None, max_length=2000)
+
+
+class ProfileUpdate(BaseModel):
+    full_name: str = Field(min_length=1, max_length=200)
+
+
+class DiagnosticQuestionOut(BaseModel):
+    id: str
+    prompt: str
+    choices: list[str]
+
+
+class DiagnosticAttemptIn(BaseModel):
+    answers: dict[str, int]
+
+
+class DiagnosticAttemptOut(BaseModel):
+    score: int
+    total: int
+
+
+class TaskTransitionIn(BaseModel):
+    to_status: str = Field(min_length=1, max_length=50)
+
+
+class TaskDetailOut(TaskOut):
+    sprint_id: str
+    sprint_name: str
+
+
+class ProgressOut(BaseModel):
+    total_tasks: int
+    by_status: dict[str, int]
+    completed_tasks: int
+    started_tasks: int
+    enrollments: list[EnrollmentOut]
+    recent_events: list[dict]
+
+
+class RoadmapWeekOut(BaseModel):
+    week: int
+    title: str
+    summary: str
+    status: str
+
+
+class RoadmapOut(BaseModel):
+    track: str
+    weeks: list[RoadmapWeekOut]
+    current_sprint: SprintOut | None = None
+
+
+class TeamMemberOut(BaseModel):
+    id: str
+    name: str
+    role: str
+    responsibilities: str
+    kind: str
+
+
+class TeamOut(BaseModel):
+    members: list[TeamMemberOut]
 
 
 class HealthOut(BaseModel):

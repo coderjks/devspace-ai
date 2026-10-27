@@ -50,3 +50,12 @@ def test_models_metadata_matches_seed_expectation():
     cols = {c.name for c in Task.__table__.columns}
     assert {"key", "acceptance_criteria", "rubric_json", "status", "sort_order"}.issubset(cols)
     assert Base.metadata.tables.keys() >= {"users", "tasks"}
+
+
+def test_enrollment_carries_onboarding_columns(db_session):
+    from app.models import Enrollment
+
+    cols = {c.name for c in Enrollment.__table__.columns}
+    assert {"experience_level", "diagnostic_result", "skill_level", "goals"}.issubset(cols)
+    inspector_cols = {c["name"] for c in inspect(db_session.bind).get_columns("enrollments")}
+    assert {"experience_level", "diagnostic_result"}.issubset(inspector_cols)

@@ -85,7 +85,9 @@ class Enrollment(Base):
     track: Mapped[str] = mapped_column(String(100), nullable=False, default="applied-ai-engineering")
     status: Mapped[EnrollmentStatus] = mapped_column(Enum(EnrollmentStatus), nullable=False, default=EnrollmentStatus.active)
     skill_level: Mapped[str] = mapped_column(String(50), nullable=False, default="beginner")
+    experience_level: Mapped[str | None] = mapped_column(String(50), nullable=True)
     goals: Mapped[str | None] = mapped_column(Text, nullable=True)
+    diagnostic_result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="enrollments")

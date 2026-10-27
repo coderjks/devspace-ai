@@ -4,28 +4,13 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import Enrollment, Project, Sprint, Task, User
-from app.schemas import EnrollmentOut, ProjectOut, SprintOut, TaskDependencyOut, TaskOut
+from app.models import Project, Sprint, Task, User
+from app.schemas import ProjectOut, SprintOut
+from app.task_view import deduped_tasks, task_out
 
 router = APIRouter(tags=["projects"])
 
-
-def _task_out(task: Task, key_by_id: dict[str, str]) -> TaskOut:
-    deps = [
-        TaskDependencyOut(depends_on_key=key_by_id.get(d.depends_on_task_id, ""), depends_on_task_id=d.depends_on_task_id)
-        for d in task.dependencies
-    ]
-    return TaskOut(
-        id=task.id,
-        key=task.key,
-        title=task.title,
-        description=task.description,
-        acceptance_criteria=task.acceptance_criteria or {},
-        rubric_json=task.rubric_json or {},
-        status=task.status,
-        sort_order=task.sort_order,
-        dependencies=deps,
-    )
+_task_out = task_out
 
 
 @router.get("/api/projects/current", response_model=ProjectOut)
@@ -44,11 +29,8 @@ def get_current_project(
     )
     sprint_out: SprintOut | None = None
     if sprint:
-        # Use unique tasks (joinedload may duplicate)
-        seen: dict[str, Task] = {}
-        for t in sprint.tasks:
-            seen[t.id] = t
-        tasks_sorted = sorted(seen.values(), key=lambda x: x.sort_order)
+        # joinedload may duplicate rows; dedupe before serializing.
+        tasks_sorted = deduped_tasks(list(sprint.tasks))
         key_by_id = {t.id: t.key for t in tasks_sorted}
         sprint_out = SprintOut(
             id=sprint.id,
@@ -77,10 +59,7 @@ def get_current_sprint(
     )
     if not sprint:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No sprint seeded")
-    seen: dict[str, Task] = {}
-    for t in sprint.tasks:
-        seen[t.id] = t
-    tasks_sorted = sorted(seen.values(), key=lambda x: x.sort_order)
+    tasks_sorted = deduped_tasks(list(sprint.tasks))
     key_by_id = {t.id: t.key for t in tasks_sorted}
     return SprintOut(
         id=sprint.id,
@@ -90,11 +69,3 @@ def get_current_sprint(
         tasks=[_task_out(t, key_by_id) for t in tasks_sorted],
     )
 
-
-@router.get("/api/enrollments/me", response_model=list[EnrollmentOut])
-def get_my_enrollments(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> list[EnrollmentOut]:
-    rows = db.scalars(select(Enrollment).where(Enrollment.user_id == current_user.id)).all()
-    return [EnrollmentOut.model_validate(r) for r in rows]
