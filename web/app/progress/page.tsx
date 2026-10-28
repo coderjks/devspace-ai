@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SiteHeader } from "@/components/site-header";
+import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
 
 type Progress = {
@@ -30,9 +30,7 @@ export default function ProgressPage() {
   }, []);
 
   return (
-    <div className="min-h-screen">
-      <SiteHeader email={me?.email} />
-      <main className="mx-auto w-full max-w-4xl px-6 py-8">
+    <AppShell email={me?.email}>
         <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
         <p className="mt-1 text-sm text-muted-foreground">Every number below is derived from persisted records.</p>
         {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
@@ -80,7 +78,6 @@ export default function ProgressPage() {
             </Card>
           </div>
         ) : null}
-      </main>
-    </div>
+    </AppShell>
   );
 }

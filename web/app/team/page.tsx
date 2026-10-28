@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SiteHeader } from "@/components/site-header";
+import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
 
 type Member = { id: string; name: string; role: string; responsibilities: string; kind: string };
@@ -23,9 +23,7 @@ export default function TeamPage() {
   }, []);
 
   return (
-    <div className="min-h-screen">
-      <SiteHeader email={me?.email} />
-      <main className="mx-auto w-full max-w-4xl px-6 py-8">
+    <AppShell email={me?.email}>
         <h1 className="text-2xl font-bold tracking-tight">Your virtual team</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Five AI teammates plus a separate Learning Assistant. Conversations arrive in Phase 03.
@@ -42,7 +40,6 @@ export default function TeamPage() {
             </Card>
           ))}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }
