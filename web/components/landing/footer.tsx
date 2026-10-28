@@ -4,8 +4,8 @@ const PRODUCT = [
   { href: "#how-it-works", label: "How It Works" },
   { href: "#ai-team", label: "AI Teammates" },
   { href: "#experience", label: "Workflows" },
-  { href: "/board", label: "Sprint Board" },
-  { href: "/progress", label: "Progress" },
+  { href: "#roadmap", label: "Roadmap" },
+  { href: "#faq", label: "FAQ" },
 ];
 
 export function Footer() {
@@ -37,13 +37,24 @@ export function Footer() {
           </ul>
         </nav>
         <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Workspace</p>
+          <ul className="mt-3 space-y-2">
+            <li>
+              <Link href="/board" className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">Sprint Board</Link>
+            </li>
+            <li>
+              <Link href="/progress" className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">Progress</Link>
+            </li>
+          </ul>
+        </div>
+        <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Get started</p>
           <ul className="mt-3 space-y-2">
             <li>
-              <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">Sign In</Link>
+              <Link href="/login" className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">Sign In</Link>
             </li>
             <li>
-              <Link href="/onboarding" className="text-sm text-muted-foreground hover:text-foreground">Start Your Internship</Link>
+              <Link href="/onboarding" className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">Start Your Internship</Link>
             </li>
           </ul>
         </div>

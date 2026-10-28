@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE } from "@/lib/utils";
 import { EmailField } from "./email-field";
@@ -75,8 +75,12 @@ export function SignInForm() {
           Signed in — redirecting to your dashboard…
         </p>
       ) : null}
-      <Button type="submit" className="w-full" disabled={loading || done}>
-        {loading ? "Signing in…" : (<>Sign In <ArrowRight size={16} aria-hidden /></>)}
+      <Button type="submit" className="group/btn w-full" disabled={loading || done} aria-busy={loading}>
+        {loading ? (
+          <><Loader2 size={16} aria-hidden className="animate-spin" /> Signing in…</>
+        ) : (
+          <>Sign In <ArrowRight size={16} aria-hidden className="group-hover/btn:translate-x-0.5" /></>
+        )}
       </Button>
     </form>
   );

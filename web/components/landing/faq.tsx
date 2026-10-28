@@ -1,4 +1,6 @@
+import { ChevronDown } from "lucide-react";
 import { Section } from "./section";
+import { Reveal } from "@/components/motion/reveal";
 
 const FAQS = [
   {
@@ -26,16 +28,21 @@ const FAQS = [
 export function Faq() {
   return (
     <Section id="faq" eyebrow="FAQ" title="Questions students ask" align="center">
-      <div className="mx-auto max-w-3xl divide-y divide-border rounded-xl border border-border bg-card">
-        {FAQS.map((f) => (
-          <details key={f.q} className="px-6 py-4">
-            <summary className="cursor-pointer list-none text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-              {f.q}
-            </summary>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{f.a}</p>
-          </details>
-        ))}
-      </div>
+      <Reveal className="mx-auto max-w-3xl">
+        <div className="divide-y divide-border rounded-2xl border border-border bg-card shadow-soft">
+          {FAQS.map((f) => (
+            <details key={f.q} className="faq-item px-6 py-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                {f.q}
+                <ChevronDown size={17} aria-hidden className="shrink-0 text-muted-foreground" />
+              </summary>
+              <div>
+                <p className="pb-1 pt-2 text-sm leading-6 text-muted-foreground">{f.a}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </Reveal>
     </Section>
   );
 }

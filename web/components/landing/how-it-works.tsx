@@ -1,5 +1,6 @@
-import { ArrowRight, MessagesSquare, KanbanSquare, GitPullRequest, Trophy, type LucideIcon } from "lucide-react";
+import { KanbanSquare, GitPullRequest, MessagesSquare, Trophy, type LucideIcon } from "lucide-react";
 import { Section } from "./section";
+import { Reveal } from "@/components/motion/reveal";
 
 const STEPS: { icon: LucideIcon; title: string; text: string }[] = [
   {
@@ -32,21 +33,28 @@ export function HowItWorks() {
       title="From Student to Software Engineer"
       description="A hands-on, project-based learning experience with your own AI engineering team."
     >
-      <ol className="grid gap-4 md:grid-cols-4">
+      <ol className="relative grid gap-4 md:grid-cols-4 md:gap-5">
+        {/* Connector line behind the step markers (desktop only). */}
+        <span
+          aria-hidden
+          className="absolute left-[12%] right-[12%] top-11 hidden h-px bg-gradient-to-r from-transparent via-border to-transparent md:block"
+        />
         {STEPS.map((s, i) => (
-          <li key={s.title} className="relative rounded-xl border border-border bg-card p-6">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground" aria-hidden>
-                {i + 1}
-              </span>
-              <s.icon size={22} aria-hidden className="text-primary" />
+          <Reveal as="li" key={s.title} delay={i * 90} className="h-full">
+            <div className="group relative h-full rounded-2xl border border-border bg-card p-6 shadow-soft transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lift">
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden
+                  className="relative z-10 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-info text-sm font-extrabold text-primary-foreground shadow-soft"
+                >
+                  {i + 1}
+                </span>
+                <s.icon size={22} aria-hidden className="text-primary" />
+              </div>
+              <h3 className="mt-4 text-[15px] font-semibold text-foreground">{s.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{s.text}</p>
             </div>
-            <h3 className="mt-4 text-[15px] font-semibold text-foreground">{s.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{s.text}</p>
-            {i < STEPS.length - 1 ? (
-              <ArrowRight size={16} aria-hidden className="absolute -right-3.5 top-1/2 hidden -translate-y-1/2 text-muted-foreground/50 md:block" />
-            ) : null}
-          </li>
+          </Reveal>
         ))}
       </ol>
     </Section>

@@ -2,8 +2,11 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { SiteHeader } from "@/components/site-header";
 import { api } from "@/lib/api";
 
@@ -65,14 +68,25 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
     <div className="min-h-screen">
       <SiteHeader email={me?.email} />
       <main className="mx-auto w-full max-w-3xl px-6 py-8">
-        <Button variant="ghost" size="sm" asChild><Link href="/board">← Back to board</Link></Button>
-        {error && !task ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
-        {task ? (
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/board"><ArrowLeft size={15} aria-hidden /> Back to board</Link>
+        </Button>
+        {error && !task ? <p role="alert" className="mt-4 text-sm text-destructive">{error}</p> : null}
+        {!task && !error ? (
           <div className="mt-4 space-y-4">
+            <LoadingStatus label="Loading task…" />
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-9 w-3/4" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+          </div>
+        ) : null}
+        {task ? (
+          <div className="mt-4 space-y-4 animate-fade-in">
             <div>
-              <p className="text-sm text-muted-foreground">{task.sprint_name} · {task.key}</p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight">{task.title}</h1>
-              <span className="mt-2 inline-block rounded-full border px-2 py-0.5 text-xs">{task.status}</span>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{task.sprint_name} · {task.key}</p>
+              <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{task.title}</h1>
+              <div className="mt-3"><StatusBadge status={task.status} /></div>
             </div>
             <Card>
               <CardHeader><CardTitle>Description</CardTitle></CardHeader>

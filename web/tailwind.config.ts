@@ -44,6 +44,34 @@ const config: Config = {
         },
       },
       borderRadius: { lg: "0.75rem", md: "0.625rem", sm: "0.5rem" },
+      boxShadow: {
+        soft: "0 1px 2px hsl(var(--foreground) / 0.05), 0 4px 16px -4px hsl(var(--foreground) / 0.08)",
+        lift: "0 2px 4px hsl(var(--foreground) / 0.06), 0 12px 32px -8px hsl(var(--foreground) / 0.18)",
+        glow: "0 0 0 1px hsl(var(--primary) / 0.25), 0 8px 32px -8px hsl(var(--primary) / 0.45)",
+      },
+      keyframes: {
+        "fade-rise": {
+          from: { opacity: "0", transform: "translateY(14px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.97) translateY(6px)" },
+          to: { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
+        shimmer: {
+          from: { backgroundPosition: "-200% 0" },
+          to: { backgroundPosition: "200% 0" },
+        },
+      },
+      animation: {
+        "fade-rise": "fade-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "fade-in": "fade-in 0.3s ease-out both",
+        "scale-in": "scale-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
+      },
     },
   },
   plugins: [],

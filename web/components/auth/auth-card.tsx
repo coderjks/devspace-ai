@@ -17,8 +17,10 @@ export function AuthCard() {
             aria-selected={mode === m}
             onClick={() => setMode(m)}
             className={cn(
-              "rounded-md px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              "rounded-md px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              mode === m
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
             )}
           >
             {m === "signin" ? "Sign In" : "Sign Up"}
@@ -35,7 +37,7 @@ export function AuthCard() {
             : "Create your intern account to join the team"}
         </p>
       </div>
-      <div role="tabpanel" className="mt-6">
+      <div key={mode} role="tabpanel" className="mt-6 animate-fade-in">
         {mode === "signin" ? <SignInForm /> : <SignUpForm />}
       </div>
       <p className="mt-5 text-center text-sm text-muted-foreground">

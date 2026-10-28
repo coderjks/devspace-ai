@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "#how-it-works", label: "How It Works" },
@@ -26,13 +27,27 @@ function Logo() {
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
-      <nav aria-label="Primary" className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3">
+    <header
+      className={cn(
+        "sticky top-0 z-50 border-b backdrop-blur transition-all duration-200",
+        scrolled
+          ? "border-border bg-background/85 shadow-soft"
+          : "border-transparent bg-background/60"
+      )}
+    >
+      <nav aria-label="Primary" className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3 transition-all duration-200">
         <Logo />
         <div className="hidden items-center gap-1 lg:flex">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+            <Link key={l.href} href={l.href} className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-accent-foreground">
               {l.label}
             </Link>
           ))}

@@ -7,6 +7,7 @@ import { Footer } from "@/components/landing/footer";
 import { Hero } from "@/components/landing/hero";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Navbar } from "@/components/landing/navbar";
+import { Roadmap } from "@/components/landing/roadmap";
 
 export const metadata: Metadata = {
   title: "DevSpace AI — Your First Engineering Team. Powered by AI.",
@@ -35,6 +36,7 @@ export default function HomePage() {
         <HowItWorks />
         <AiTeam />
         <Features />
+        <Roadmap />
         <Faq />
         <FinalCta />
       </main>

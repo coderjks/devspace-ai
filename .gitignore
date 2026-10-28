@@ -72,3 +72,6 @@ blob-report/
 # --- Logs & caches ---
 *.log
 .cache/
+
+# --- Supplied reference images (design targets, never committed) ---
+reference_images/

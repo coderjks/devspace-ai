@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader } from "@/components/site-header";
 import { api } from "@/lib/api";
 
@@ -84,48 +87,60 @@ export default function BoardPage() {
     );
   }
 
+  const loading = !sprint && !error;
+
   return (
     <div className="min-h-screen">
       <SiteHeader email={me?.email} />
       <main className="mx-auto w-full max-w-5xl px-6 py-8">
-        <h1 className="text-2xl font-bold tracking-tight">{sprint?.name ?? "Sprint board"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Sprint 1 · Applied AI Engineering</p>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{sprint?.name ?? "Sprint board"}</h1>
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
           Status changes are enforced by the backend. Locked tasks unlock through evaluation, never by hand.
         </p>
-        {notice ? <p className="mt-3 text-sm text-success">{notice}</p> : null}
-        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+        {notice ? <p role="status" className="mt-3 animate-fade-in text-sm text-success">{notice}</p> : null}
+        {error ? <p role="alert" className="mt-3 text-sm text-destructive">{error}</p> : null}
+        {loading ? <LoadingStatus label="Loading sprint board…" /> : null}
         <div className="mt-6 grid gap-4 md:grid-cols-5">
-          {COLUMNS.map((col) => (
-            <section key={col.status} className="rounded-lg border bg-secondary/40 p-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{col.title}</h2>
-              <div className="mt-2 space-y-2">
-                {(sprint?.tasks ?? [])
-                  .filter((t) => t.status === col.status)
-                  .map((t) => (
-                    <Card key={t.id}>
-                      <CardContent className="space-y-2 p-3">
-                        <Link href={`/tasks/${t.id}`} className="text-sm font-medium hover:underline">
-                          {t.key} — {t.title}
-                        </Link>
-                        {t.status === "todo" ? (
-                          <Button size="sm" className="w-full" disabled={busy === t.id} onClick={() => transition(t.id, "in_progress")}>
-                            Start work
-                          </Button>
-                        ) : null}
-                        {t.status === "in_progress" ? (
-                          <Button size="sm" variant="outline" className="w-full" disabled={busy === t.id} onClick={() => transition(t.id, "todo")}>
-                            Move back to To Do
-                          </Button>
-                        ) : null}
-                      </CardContent>
-                    </Card>
-                  ))}
-                {(sprint?.tasks ?? []).filter((t) => t.status === col.status).length === 0 ? (
-                  <p className="px-1 py-4 text-xs text-muted-foreground">Empty</p>
-                ) : null}
-              </div>
-            </section>
-          ))}
+          {COLUMNS.map((col) => {
+            const tasks = (sprint?.tasks ?? []).filter((t) => t.status === col.status);
+            return (
+              <section key={col.status} aria-label={`${col.title} column`} className="rounded-2xl border border-border bg-muted/40 p-3">
+                <h2 className="flex items-center justify-between px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {col.title}
+                  <span aria-hidden className="rounded-full bg-background px-1.5 py-0.5 text-[11px] tabular-nums">
+                    {loading ? "–" : tasks.length}
+                  </span>
+                </h2>
+                <div className="mt-2 space-y-2">
+                  {loading
+                    ? [0, 1].map((i) => <Skeleton key={i} className="h-[4.5rem] w-full rounded-xl" />)
+                    : tasks.map((t) => (
+                        <Card key={t.id} className="transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lift">
+                          <CardContent className="space-y-2 p-3">
+                            <Link href={`/tasks/${t.id}`} className="text-sm font-medium leading-5 hover:underline">
+                              {t.key} — {t.title}
+                            </Link>
+                            {t.status === "todo" ? (
+                              <Button size="sm" className="w-full" disabled={busy === t.id} onClick={() => transition(t.id, "in_progress")}>
+                                {busy === t.id ? "Starting…" : "Start work"}
+                              </Button>
+                            ) : null}
+                            {t.status === "in_progress" ? (
+                              <Button size="sm" variant="outline" className="w-full" disabled={busy === t.id} onClick={() => transition(t.id, "todo")}>
+                                {busy === t.id ? "Moving…" : "Move back to To Do"}
+                              </Button>
+                            ) : null}
+                          </CardContent>
+                        </Card>
+                      ))}
+                  {!loading && tasks.length === 0 ? (
+                    <EmptyState icon={Inbox} title="No tasks here" hint="Tasks appear as evaluations unlock them." />
+                  ) : null}
+                </div>
+              </section>
+            );
+          })}
         </div>
       </main>
     </div>

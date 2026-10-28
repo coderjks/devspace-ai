@@ -123,3 +123,97 @@
     }
   }
 }
+
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+@layer utilities {
+  /* Scroll-triggered reveal (paired with the Reveal component).
+     Initial state is applied only when JS is available (.js-reveal on <html>);
+     without JS the content renders normally. Delay via --reveal-delay. */
+  .js-reveal .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .js-reveal .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Hero entrance stagger: --enter-delay in ms, applied with animation-delay. */
+  .enter-rise {
+    animation: fade-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  /* Soft token-based radial glow for hero / CTA backdrops. Never a flat neon wash:
+     low-opacity primary/accent tints that adapt to the active theme. */
+  .glow-conic {
+    background:
+      radial-gradient(42rem 22rem at 15% -5%, hsl(var(--primary) / 0.14), transparent 60%),
+      radial-gradient(36rem 20rem at 85% 10%, hsl(var(--info) / 0.12), transparent 60%);
+  }
+  .dark .glow-conic {
+    background:
+      radial-gradient(42rem 22rem at 15% -5%, hsl(var(--primary) / 0.22), transparent 60%),
+      radial-gradient(36rem 20rem at 85% 10%, hsl(var(--info) / 0.16), transparent 60%);
+  }
+
+  /* Faint engineering grid texture (hero only). */
+  .bg-blueprint {
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 20%, black 30%, transparent 75%);
+  }
+
+  /* Loading skeleton shimmer. */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      100deg,
+      hsl(var(--muted)) 30%,
+      hsl(var(--muted-foreground) / 0.18) 50%,
+      hsl(var(--muted)) 70%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  /* FAQ accordion affordances (native <details>, CSS only). */
+  details.faq-item > div {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease-out;
+  }
+  details.faq-item[open] > div {
+    grid-template-rows: 1fr;
+  }
+  details.faq-item > div > p {
+    overflow: hidden;
+  }
+  details.faq-item summary svg {
+    transition: transform 0.2s ease-out;
+  }
+  details.faq-item[open] summary svg {
+    transform: rotate(180deg);
+  }
+}

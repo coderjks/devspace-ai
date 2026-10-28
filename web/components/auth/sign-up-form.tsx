@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, User } from "lucide-react";
+import { ArrowRight, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE, cn } from "@/lib/utils";
@@ -108,8 +108,12 @@ export function SignUpForm() {
           Account created — taking you to onboarding…
         </p>
       ) : null}
-      <Button type="submit" className="w-full" disabled={loading || done}>
-        {loading ? "Creating account…" : (<>Sign Up <ArrowRight size={16} aria-hidden /></>)}
+      <Button type="submit" className="group/btn w-full" disabled={loading || done} aria-busy={loading}>
+        {loading ? (
+          <><Loader2 size={16} aria-hidden className="animate-spin" /> Creating account…</>
+        ) : (
+          <>Sign Up <ArrowRight size={16} aria-hidden className="group-hover/btn:translate-x-0.5" /></>
+        )}
       </Button>
     </form>
   );

@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { SiteHeader } from "@/components/site-header";
 import { api } from "@/lib/api";
 
@@ -55,7 +58,22 @@ export default function DashboardPage() {
   }
 
   if (!me || !project || enrolled === null) {
-    return <main className="mx-auto max-w-2xl px-6 py-16 text-sm text-muted-foreground">Loading dashboard…</main>;
+    return (
+      <div className="min-h-screen">
+        <SiteHeader />
+        <main className="mx-auto w-full max-w-4xl px-6 py-8">
+          <LoadingStatus label="Loading dashboard…" />
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="mt-2 h-5 w-80" />
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-36 w-full rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="mt-6 h-64 w-full rounded-xl" />
+        </main>
+      </div>
+    );
   }
 
   if (!enrolled) {
@@ -81,21 +99,22 @@ export default function DashboardPage() {
     <div className="min-h-screen">
       <SiteHeader email={me.email} />
       <main className="mx-auto w-full max-w-4xl px-6 py-8">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome, {me.full_name || me.email}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{project.name} — {project.sprint?.name}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Applied AI Engineering</p>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Welcome, {me.full_name || me.email}</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">{project.name} — {project.sprint?.name}</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader><CardTitle>{progress?.total_tasks ?? "—"}</CardTitle><CardDescription>Sprint tasks</CardDescription></CardHeader>
-            <CardContent><Button variant="outline" size="sm" asChild><Link href="/board">Open board</Link></Button></CardContent>
+          <Card className="transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lift">
+            <CardHeader><CardTitle className="text-3xl font-extrabold tabular-nums">{progress?.total_tasks ?? "—"}</CardTitle><CardDescription>Sprint tasks</CardDescription></CardHeader>
+            <CardContent><Button variant="outline" size="sm" asChild><Link href="/board">Open board <ArrowRight size={14} aria-hidden /></Link></Button></CardContent>
           </Card>
-          <Card>
-            <CardHeader><CardTitle>{progress?.started_tasks ?? "—"}</CardTitle><CardDescription>In progress</CardDescription></CardHeader>
-            <CardContent><Button variant="outline" size="sm" asChild><Link href="/progress">View progress</Link></Button></CardContent>
+          <Card className="transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lift">
+            <CardHeader><CardTitle className="text-3xl font-extrabold tabular-nums">{progress?.started_tasks ?? "—"}</CardTitle><CardDescription>In progress</CardDescription></CardHeader>
+            <CardContent><Button variant="outline" size="sm" asChild><Link href="/progress">View progress <ArrowRight size={14} aria-hidden /></Link></Button></CardContent>
           </Card>
-          <Card>
-            <CardHeader><CardTitle>{progress?.completed_tasks ?? "—"}</CardTitle><CardDescription>Approved</CardDescription></CardHeader>
-            <CardContent><Button variant="outline" size="sm" asChild><Link href="/roadmap">View roadmap</Link></Button></CardContent>
+          <Card className="transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lift">
+            <CardHeader><CardTitle className="text-3xl font-extrabold tabular-nums">{progress?.completed_tasks ?? "—"}</CardTitle><CardDescription>Approved</CardDescription></CardHeader>
+            <CardContent><Button variant="outline" size="sm" asChild><Link href="/roadmap">View roadmap <ArrowRight size={14} aria-hidden /></Link></Button></CardContent>
           </Card>
         </div>
 
@@ -105,13 +124,18 @@ export default function DashboardPage() {
             <CardDescription>Exactly six tickets. Open one to see acceptance criteria.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="divide-y">
+            <ul className="divide-y divide-border">
               {project.sprint?.tasks.map((t) => (
-                <li key={t.id} className="flex items-center justify-between py-3">
-                  <Link href={`/tasks/${t.id}`} className="text-sm font-medium hover:underline">
-                    {t.key} — {t.title}
+                <li key={t.id}>
+                  <Link
+                    href={`/tasks/${t.id}`}
+                    className="group flex items-center justify-between gap-3 rounded-lg py-3 transition-colors duration-150 hover:bg-muted/50"
+                  >
+                    <span className="text-sm font-medium group-hover:underline">
+                      {t.key} — {t.title}
+                    </span>
+                    <StatusBadge status={t.status} />
                   </Link>
-                  <span className="rounded-full border px-2 py-0.5 text-xs">{t.status}</span>
                 </li>
               ))}
             </ul>
