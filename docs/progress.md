@@ -1,9 +1,9 @@
 # DevSpace AI — Progress Tracker
 
-**Last updated:** 2026-10-28 (Phase 02 committed on feat/02-onboarding-board; CORS fix verified live)
+**Last updated:** 2026-10-28 (landing, auth, theme system and skill committed on feat/02-onboarding-board)
 **Canonical PRD:** `docs/prd/requirements.md` v2.2.1
 **Execution order:** `docs/prompts/build-playbook.md` v2.2.1
-**Gate state:** Phase 02 DONE, verified and committed on `feat/02-onboarding-board`. API preflight still NOT STARTED (needs Meta credentials). Do not start Phase 03 without explicit instruction.
+**Gate state:** Phase 02 DONE, verified and committed on `feat/02-onboarding-board`, plus committed landing/auth/theme/skill work (see change log). API preflight still NOT STARTED (needs Meta credentials). Do not start Phase 03 without explicit instruction.
 **Handoff:** New models/engineers start at [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md), then read this file.
 
 ---
@@ -119,7 +119,7 @@ Voice: `POST /api/voice/sessions`, `POST /api/voice/sessions/{id}/turns`, `POST 
 | `.env.example` / `README.md` | Typed template (direct vs pooled DB notes) + setup commands | DONE |
 | Database / migrations | Alembic `0001`→`0002` upgrade verified on Postgres 16 (Docker, port 5433); enrollments carry `experience_level` + `diagnostic_result`; 11 tables | DONE |
 | Auth | Register/login/logout, httpOnly cookie + Bearer, `GET /api/auth/me`, `PATCH /api/users/me`, owner-scoped enrollments; PBKDF2-SHA256 + HS256 JWT | DONE |
-| Git history | `main` = `3e39603` (docs only); `feat/01-foundation` = `ac23eb3` (Phase 01 + handoff); `feat/02-onboarding-board` = `5cc676e` (Phase 02, 31 files) + docs update | COMMITTED (not pushed) |
+| Git history | `main` = `3e39603` (docs only); `feat/01-foundation` = `ac23eb3`; `feat/02-onboarding-board` = `5cc676e` (Phase 02) → `b0c9ba2` (landing) → `bfcb827` (auth) → `1c9efac` (theme) → `8541c86` (skill) + this docs update | COMMITTED (not pushed) |
 
 ---
 
@@ -222,6 +222,13 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-10-28 | First commits created: `main` `3e39603` docs-only (`docs:`), then branch `feat/01-foundation` `97290ee` (`feat(foundation):`, 51 Phase 01 files; 14 tests re-verified before commit). Working tree clean. Not pushed. Prepared for Muse Spark 1.3 model switch — see handoff §3/§12 for the starter prompt. |
 | 2026-10-28 | Branch `feat/02-onboarding-board` created from `feat/01-foundation`; Phase 02 implemented (enrollment/onboarding API, transitions, progress, roadmap, team; 6 new pages) and verified (§10). Committed as `5cc676e` (`feat(onboarding):`, 31 files). API preflight still pending. |
 | 2026-10-28 | Local setup run for user review (Docker Postgres/Redis, migrated + seeded, API :8000, web :3000). Fixed browser login failure by allowing both `localhost:3000` and `127.0.0.1:3000` CORS origins; demo login verified live. |
+| 2026-10-28 | Landing page redesigned on `feat/02-onboarding-board` (dark, `components/landing/` ×11 + `app/page.tsx`; CTAs → `/login`, `/onboarding`; no legal links — those pages don't exist). `typecheck` + `build` pass; served HTML verified (1 h1, all anchors, disclaimer). No browser visual test performed. Uncommitted; no phase advanced. |
+| 2026-10-28 | Landing page rebuilt against the supplied reference image on `feat/02-onboarding-board`: tokens `#09090F/#14141F/#8B5CF6/#38BDF8`, two-column hero with dashboard preview, journey/AI-team/workflows/FAQ/CTA/footer; roadmap+comparison sections removed; “Trusted by” logos omitted (fabricated endorsements banned). `typecheck` + `build` pass; served HTML + stylesheet verified. No browser visual test performed. Uncommitted; no phase advanced. |
+| 2026-10-28 | Auth page rebuilt against the Page 02 reference on `feat/02-onboarding-board`: split-screen (`components/auth/` ×7 + `app/login/page.tsx`), brand panel with Kanban/chat preview, tabbed Sign In/Sign Up wired to the existing email/password contract. Omitted per brief+contract: OAuth buttons (no provider configured), forgot-password link (no endpoint), Terms/Privacy links (no pages), testimonial and trust logos (unverified). `typecheck` + `build` pass; served HTML verified. No browser visual test performed. Uncommitted; no phase advanced. |
+| 2026-10-28 | Fixed “signup not working”: the long-running dev server was serving HTML but 404ing all JS chunks (stale incremental cache), leaving the page non-interactive; the register API itself verified 201 throughout. Restarted dev with cleared `.next`; all chunks + CSS now 200. If interactivity ever dies again while HTML still loads, check chunk URLs before touching code. |
+| 2026-10-28 | Dual-theme design system implemented on `feat/02-onboarding-board` (uncommitted): var-driven Tailwind (`darkMode: class`) + `next-themes` (Light default, Dark, System, persisted), tokens for bg/fg/card/popover/primary/secondary/muted/accent/border/input/ring/destructive/success/warning/info/chart×5/sidebar, radius 12/10/8, 16px base, global focus ring + reduced-motion kill-switch, ThemeToggle in landing nav + app header, landing + auth migrated off hardcoded colors, new `docs/design/design-system.md`. `typecheck` + `build` + 32 pytest pass; served CSS contains both themes; SSR defaults to light. Theme switching/persistence code-verified via next-themes, not browser-tested. No backend changes; no phase advanced. |
+| 2026-10-28 | Theme toggle replaced the confusing Light→Dark→System cycle button with an explicit menu (Light/Dark/System + checkmark, Escape/outside-click close). A transient `next build` failure (`Cannot find module for page: /board`) was stale `.next` contention with the running dev server, not code — clean rebuild passes 11/11. Served HTML + CSS re-verified. |
+| 2026-10-28 | Committed the UI work on `feat/02-onboarding-board` as reviewed units: `b0c9ba2` feat(landing, 11 files), `bfcb827` feat(auth, 8 files), `1c9efac` feat(theme incl. design-system.md, 15 files), `8541c86` feat(skills, token-efficient-research). `reference_images/` (3.3MB supplied PNGs) deliberately left untracked. Not pushed. |
 
 ---
 

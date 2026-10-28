@@ -2,7 +2,7 @@
 
 **Purpose:** Everything a new model (or engineer) needs to continue without re-deriving context. Read this first, then the sources below. If this file and the code disagree, the code and the canonical PRD win — flag the drift in [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md).
 
-**Last updated:** 2026-10-28, after Phase 02 was committed on `feat/02-onboarding-board`.
+**Last updated:** 2026-10-28, after landing/auth/theme/skill commits on `feat/02-onboarding-board`.
 **Workspace:** `/Users/jsaxena/Documents/devspace-ai` · **Branch:** `feat/02-onboarding-board`
 
 ---
@@ -34,7 +34,7 @@ Demo journey: `Onboard → sprint → text chat → voice standup → confirm bl
 | **Phase 02 (onboarding, board)** | **DONE, verified and committed** (`5cc676e`; see progress §10) |
 | API preflight (Meta runtime check) | NOT STARTED — needs user-supplied credentials/docs |
 | Phases 03–12 | NOT STARTED |
-| Git | `main` = `3e39603` (docs only). `feat/01-foundation` = `ac23eb3` (Phase 01 + handoff). Current branch `feat/02-onboarding-board` = `5cc676e` (Phase 02) + this docs update. **Not pushed.** Do not commit/push unless the user asks. |
+| Git | `main` = `3e39603` (docs only). `feat/01-foundation` = `ac23eb3` (Phase 01 + handoff). Current branch `feat/02-onboarding-board` = `5cc676e` (Phase 02) → `b0c9ba2` (landing) → `bfcb827` (auth) → `1c9efac` (theme) → `8541c86` (skill) + this docs update. **Not pushed.** `reference_images/` (supplied PNGs, 3.3MB) intentionally untracked — delete or gitignore when done with them. Do not push unless the user asks. |
 | Running servers | Local review stack was running (API :8000, web :3000, Docker Postgres/Redis) for user verification; CORS fixed to allow both `localhost:3000` and `127.0.0.1:3000` origins. Servers live only for this session (see §9 pitfall on macOS). |
 
 **Rule:** Do not start API preflight or Phase 03 until the user explicitly instructs it. Each phase ends with the playbook verification prompt, a progress update, and a stop. Never implement two phases in one turn.
@@ -55,6 +55,14 @@ Monorepo, runnable end to end locally. No AI, voice, or GitHub code (scope exclu
 - **Docs:** [.env.example](/Users/jsaxena/Documents/devspace-ai/.env.example) (placeholders only), [README.md](/Users/jsaxena/Documents/devspace-ai/README.md), architecture ADRs.
 
 Phase 02 added (branch `feat/02-onboarding-board`, uncommitted): `POST /api/enrollments` (idempotent) + `PATCH /api/users/me` + diagnostics (`GET /api/diagnostics/questions` without answers, `POST /api/diagnostics/attempts` scored server-side and saved to the enrollment); task detail `GET /api/tasks/{id}` and `POST /api/tasks/{id}/transitions` with an allowlist (`todo↔in_progress` only — `approved`, locked, and unknown targets rejected); `GET /api/progress` derived from persisted state; `GET /api/roadmap` (12 weeks from `curriculum/roadmap-12wk.json` + live sprint); `GET /api/team` (static directory, chat in Phase 03); migration `20261028_0002` (`experience_level`, `diagnostic_result`); frontend `/onboarding`, `/board`, `/tasks/[id]`, `/team`, `/roadmap`, `/progress` + shared `SiteHeader`; 18 new API tests (32 total). Full evidence in [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md) §10.
+
+Landing page redesigned on the same branch (uncommitted, same session): dark `components/landing/` (navbar, hero, workspace preview, how-it-works, AI team, workflows, roadmap, comparison, FAQ, final CTA, footer) + `app/page.tsx` with SEO/OpenGraph metadata. CTAs use real routes (`/login`, `/onboarding`); no Privacy/Terms links (no such pages); marketing data explicitly labeled illustrative. `typecheck` + `build` pass; served HTML smoke-checked. No browser visual test was performed. (Brief named `docs/phase-handoff.md`; the actual file is `docs/handoff.md`.) Backend, auth contracts, and all other pages untouched; no phase advanced.
+
+Landing page then rebuilt against the supplied reference image (same branch, uncommitted): exact tokens `#09090F/#14141F/#8B5CF6/#38BDF8/#F8FAFC/#94A3B8`, two-column hero with a dashboard mock (sidebar, stats, sprint card, activity, team), numbered journey with connectors, six role cards with initial avatars, six workflow cards, FAQ, final CTA, footer. Roadmap and comparison sections removed; “Trusted by” logos deliberately omitted (fabricated endorsements are banned by the brief). Served HTML (headline, 4 CTAs, anchors, disclaimers) and stylesheet (200, tokens present) verified; dev server once served a stale broken CSS and was restarted with a cleared cache. No browser visual test performed. Backend, auth contracts, and app pages untouched; no phase advanced.
+
+Auth page then rebuilt against the Page 02 reference image (same branch, uncommitted): split-screen `components/auth/` (brand panel, Kanban/chat mini-preview, tabbed card, sign-in/sign-up forms, email/password fields) + `app/login/page.tsx`. Forms wire to the existing email/password contract (login → `/dashboard`, signup → `/onboarding`); omitted per brief and contract: OAuth buttons, forgot-password link, Terms/Privacy links, testimonial, trust logos. `typecheck` + `build` pass; served HTML verified. No browser visual test performed. Backend and auth contracts untouched; no phase advanced.
+
+Dual-theme design system then implemented on the same branch (uncommitted): `tailwind.config.ts` is now CSS-variable driven (`darkMode: "class"`) with tokens for background/foreground/card/popover/primary/secondary/muted/accent/border/input/ring/destructive/success/warning/info/chart/sidebar; `globals.css` holds the Soft Slate + Indigo light default and Midnight Slate + Soft Blue `.dark` set (contrast-checked), 16px base, global focus ring, and a `prefers-reduced-motion` kill-switch; `next-themes` added (`ThemeProvider` + cycling `ThemeToggle` in landing nav and app header; Light default, System support, `localStorage` persistence, hydration-safe). Landing and auth screens migrated off hardcoded colors (glows/gradient headline removed per the new direction); app screens needed only status-color migration. New `docs/design/design-system.md` is the reference for future UI work. `typecheck` + `build` + 32 pytest pass; served CSS contains both theme token sets and SSR renders light. Actual theme toggling/persistence is code-verified, not browser-tested. No backend changes; no phase advanced.
 
 ## 5. File map (where things live)
 
