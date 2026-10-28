@@ -66,7 +66,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
       <SiteHeader email={me?.email} />
       <main className="mx-auto w-full max-w-3xl px-6 py-8">
         <Button variant="ghost" size="sm" asChild><Link href="/board">← Back to board</Link></Button>
-        {error && !task ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+        {error && !task ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
         {task ? (
           <div className="mt-4 space-y-4">
             <div>
@@ -99,7 +99,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
                 )}
               </CardContent>
             </Card>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <div className="flex gap-2">
               {task.status === "todo" ? (
                 <Button onClick={() => transition("in_progress")} disabled={busy}>Start work</Button>

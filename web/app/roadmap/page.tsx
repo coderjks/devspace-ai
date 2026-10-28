@@ -32,7 +32,7 @@ export default function RoadmapPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Only Sprint 1 is fully specified for the hackathon. Later weeks are the product roadmap.
         </p>
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         <ol className="mt-6 space-y-3">
           {roadmap?.weeks.map((w) => (
             <li key={w.week}>

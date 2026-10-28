@@ -35,7 +35,7 @@ export default function ProgressPage() {
       <main className="mx-auto w-full max-w-4xl px-6 py-8">
         <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
         <p className="mt-1 text-sm text-muted-foreground">Every number below is derived from persisted records.</p>
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         {progress ? (
           <div className="mt-6 space-y-4">
             <div className="grid gap-4 md:grid-cols-3">

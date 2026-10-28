@@ -30,7 +30,7 @@ export default function TeamPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Five AI teammates plus a separate Learning Assistant. Conversations arrive in Phase 03.
         </p>
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {members.map((m) => (
             <Card key={m.id}>

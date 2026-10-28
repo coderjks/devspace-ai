@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { logout } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -36,8 +37,9 @@ export function SiteHeader({ email }: { email?: string }) {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
           {email ? <span className="hidden text-xs text-muted-foreground sm:inline">{email}</span> : null}
+          <ThemeToggle />
           <Button variant="outline" size="sm" onClick={logout}>
             Log out
           </Button>

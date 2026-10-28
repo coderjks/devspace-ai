@@ -111,7 +111,7 @@ export default function OnboardingPage() {
               <label htmlFor="name" className="text-sm font-medium">Full name</label>
               <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Asha Sharma" />
             </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <Button className="w-full" onClick={saveProfile} disabled={loading}>
               {loading ? "Saving…" : "Continue"}
             </Button>
@@ -144,7 +144,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
             ))}
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep(3)}>Skip</Button>
               <Button className="flex-1" onClick={submitDiagnostic} disabled={loading}>
@@ -181,7 +181,7 @@ export default function OnboardingPage() {
               <label htmlFor="goals" className="text-sm font-medium">Goals for the internship</label>
               <Input id="goals" value={goals} onChange={(e) => setGoals(e.target.value)} placeholder="Ship the support backend and learn RAG" />
             </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <Button className="w-full" onClick={enroll} disabled={loading}>
               {loading ? "Enrolling…" : "Join the team"}
             </Button>

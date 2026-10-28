@@ -92,8 +92,8 @@ export default function BoardPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Status changes are enforced by the backend. Locked tasks unlock through evaluation, never by hand.
         </p>
-        {notice ? <p className="mt-3 text-sm text-green-700">{notice}</p> : null}
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+        {notice ? <p className="mt-3 text-sm text-success">{notice}</p> : null}
+        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         <div className="mt-6 grid gap-4 md:grid-cols-5">
           {COLUMNS.map((col) => (
             <section key={col.status} className="rounded-lg border bg-secondary/40 p-3">
