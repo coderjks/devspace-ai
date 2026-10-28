@@ -34,7 +34,7 @@ Demo journey: `Onboard → sprint → text chat → voice standup → confirm bl
 | **Phase 02 (onboarding, board)** | **DONE, verified and committed** (`5cc676e`; see progress §10) |
 | API preflight (Meta runtime check) | NOT STARTED — needs user-supplied credentials/docs |
 | Phases 03–12 | NOT STARTED |
-| Git | `main` = `3e39603` (docs only). `feat/01-foundation` = `ac23eb3` (Phase 01 + handoff). Current branch `feat/02-onboarding-board` = `5cc676e` (Phase 02) → `b0c9ba2` (landing) → `bfcb827` (auth) → `1c9efac` (theme) → `8541c86` (skill) → `e82d4bb` (trackers) → `feat(polish)` UI polish pass + this docs update. **Not pushed.** `reference_images/` gitignored (supplied PNGs, never commit). `AGENTS.md` has user-authored UI-section edits — left uncommitted. Do not push unless the user asks. |
+| Git | `main` = `3e39603` (docs only). `feat/01-foundation` = `ac23eb3` (Phase 01 + handoff). Current branch `feat/02-onboarding-board` = `5cc676e` (Phase 02) → `b0c9ba2` (landing) → `bfcb827` (auth) → `1c9efac` (theme) → `8541c86` (skill) → `e82d4bb` (trackers) → `feat(polish)` UI polish pass → `docs(agents)` UI-section instructions. **Not pushed.** `reference_images/` gitignored (supplied PNGs, never commit). Do not push unless the user asks. |
 | Running servers | Local review stack was running (API :8000, web :3000, Docker Postgres/Redis) for user verification; CORS fixed to allow both `localhost:3000` and `127.0.0.1:3000` origins. Servers live only for this session (see §9 pitfall on macOS). |
 
 **Rule:** Do not start API preflight or Phase 03 until the user explicitly instructs it. Each phase ends with the playbook verification prompt, a progress update, and a stop. Never implement two phases in one turn.
