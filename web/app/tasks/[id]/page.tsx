@@ -1,13 +1,13 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { SiteHeader } from "@/components/site-header";
+import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
 
 type TaskDetail = {
@@ -27,8 +27,8 @@ function criteriaList(raw: TaskDetail["acceptance_criteria"]): string[] {
   return [];
 }
 
-export default function TaskPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function TaskPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [me, setMe] = useState<Me | null>(null);
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +65,8 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   }
 
   return (
-    <div className="min-h-screen">
-      <SiteHeader email={me?.email} />
-      <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <AppShell email={me?.email}>
+        <div className="mx-auto w-full max-w-3xl">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/board"><ArrowLeft size={15} aria-hidden /> Back to board</Link>
         </Button>
@@ -127,7 +126,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
             </div>
           </div>
         ) : null}
-      </main>
-    </div>
+        </div>
+    </AppShell>
   );
 }
