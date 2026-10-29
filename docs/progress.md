@@ -1,6 +1,6 @@
 # DevSpace AI — Progress Tracker
 
-**Last updated:** 2026-10-27 (Phase 01 verified; handoff added for model switching)
+**Last updated:** 2026-10-28 (Phase 01 committed on feat/01-foundation; ready for model switch)
 **Canonical PRD:** `docs/prd/requirements.md` v2.2.1
 **Execution order:** `docs/prompts/build-playbook.md` v2.2.1
 **Gate state:** Phase 01 DONE and verified. Awaiting approval for API preflight / Phase 02. Do not start the next phase without explicit instruction.
@@ -119,7 +119,7 @@ Voice: `POST /api/voice/sessions`, `POST /api/voice/sessions/{id}/turns`, `POST 
 | `.env.example` / `README.md` | Typed template (direct vs pooled DB notes) + setup commands | DONE |
 | Database / migrations | Alembic upgrade/downgrade cycle verified on SQLite and Postgres 16 (Docker, port 5433); 11 tables | DONE |
 | Auth | Register/login/logout, httpOnly cookie + Bearer, `GET /api/auth/me`, owner-scoped enrollments; PBKDF2-SHA256 + HS256 JWT | DONE |
-| Git history | Still **zero commits**; all Phase 01 files untracked pending user commit | UNCOMMITTED |
+| Git history | `main` = `3e39603` (docs only); `feat/01-foundation` = `97290ee` (Phase 01, 51 files); working tree clean at handoff update | COMMITTED (not pushed) |
 
 ---
 
@@ -219,6 +219,7 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-10-27 | Prompt 00 orientation: repo inventoried as greenfield (no commits, no code); architecture, security boundaries, open questions documented; Phase 01 proposed; awaiting approval. Integrations all `UNTESTED`. |
 | 2026-10-27 | Phase 01 implemented on `go`: `docs/prompt/`→`docs/prompts/`, monorepo + auth + seed + migrations + tests. Verified (§9). Awaiting approval for API preflight / Phase 02. |
 | 2026-10-27 | Added [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md) for model switching (read order, verified run/test commands, integration status, pitfalls, security boundaries, next-gate rules). No feature changes; no commits. |
+| 2026-10-28 | First commits created: `main` `3e39603` docs-only (`docs:`), then branch `feat/01-foundation` `97290ee` (`feat(foundation):`, 51 Phase 01 files; 14 tests re-verified before commit). Working tree clean. Not pushed. Prepared for Muse Spark 1.3 model switch — see handoff §3/§12 for the starter prompt. |
 
 ---
 
@@ -241,4 +242,4 @@ Commands run in this session; exit statuses observed, not assumed.
 | Web+API smoke | Next `start` :3000 + API :8000, `curl` both | Web `/` 200, `/login` 200, API health 200 |
 | Compose | `docker compose config` | Valid |
 
-**Known limitations:** Docker full-stack (`up --build` for api/web/worker images) was not run end-to-end (only Postgres/Redis containers + host API/Web were exercised). Host Postgres on :5432 belongs to another stack and was not touched; our Compose defaults remain :5432/:6379 with port overrides. Local servers were stopped after verification — this macOS host cannot detach a durable server (`setsid` unavailable), so nothing is left running. Browser interaction (click-through login) was verified via HTTP + build, not a real browser. No commits were made.
+**Known limitations:** Docker full-stack (`up --build` for api/web/worker images) was not run end-to-end (only Postgres/Redis containers + host API/Web were exercised). Host Postgres on :5432 belongs to another stack and was not touched; our Compose defaults remain :5432/:6379 with port overrides. Local servers were stopped after verification — this macOS host cannot detach a durable server (`setsid` unavailable), so nothing is left running. Browser interaction (click-through login) was verified via HTTP + build, not a real browser. (Commits were created afterwards — see change log 2026-10-28.)

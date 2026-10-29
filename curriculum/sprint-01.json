@@ -1,0 +1,128 @@
+{
+  "curriculum_version": "1.0",
+  "project": {
+    "name": "AI-Powered Customer Support Backend",
+    "description": "FastAPI + PostgreSQL support-ticket backend used as the Applied AI Engineering starter project. Students implement ticket APIs, authorization, LLM summarization, retrieval, safe tool use, and evaluation.",
+    "starter_repo": "devspace-ai/customer-support-backend"
+  },
+  "sprint": {
+    "name": "Sprint 1 — Support Backend Foundations",
+    "status": "active"
+  },
+  "tasks": [
+    {
+      "key": "AI-001",
+      "title": "Implement ticket creation REST API",
+      "description": "Create POST /tickets with request validation, persistence, and proper status codes. Return the created ticket with id and timestamps.",
+      "sort_order": 1,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance_criteria": {
+        "criteria": [
+          "POST /tickets validates title and body",
+          "Returns 201 with persisted ticket",
+          "Invalid payload returns 422"
+        ]
+      },
+      "rubric_json": {
+        "skills": ["python", "apis", "databases"],
+        "checks": ["schema_validation", "tests"]
+      }
+    },
+    {
+      "key": "AI-002",
+      "title": "Add authorization to ticket access",
+      "description": "Ensure students can only access their own tickets. Add ownership checks to GET/PATCH ticket endpoints and cover negative-access cases.",
+      "sort_order": 2,
+      "status": "locked",
+      "depends_on": ["AI-001"],
+      "acceptance_criteria": {
+        "criteria": [
+          "Owner can read own ticket",
+          "Non-owner receives 403 or 404",
+          "Hidden negative-access tests pass"
+        ]
+      },
+      "rubric_json": {
+        "skills": ["security", "apis", "testing"],
+        "checks": ["hidden_negative_access_tests"]
+      }
+    },
+    {
+      "key": "AI-003",
+      "title": "Integrate LLM ticket summarization",
+      "description": "Add a summarization endpoint that calls the LLM provider behind a typed interface and returns structured output with error handling for provider failures.",
+      "sort_order": 3,
+      "status": "locked",
+      "depends_on": ["AI-001"],
+      "acceptance_criteria": {
+        "criteria": [
+          "Returns structured summary JSON",
+          "Handles provider timeout with 502/503",
+          "Does not leak prompt or keys"
+        ]
+      },
+      "rubric_json": {
+        "skills": ["llm-integration", "apis"],
+        "checks": ["structured_output", "error_handling"]
+      }
+    },
+    {
+      "key": "AI-004",
+      "title": "Add retrieval over support knowledge base",
+      "description": "Index support articles and return relevant passages for a ticket query with relevance scoring.",
+      "sort_order": 4,
+      "status": "locked",
+      "depends_on": ["AI-003"],
+      "acceptance_criteria": {
+        "criteria": [
+          "Returns top-k relevant passages",
+          "Relevance fixture passes threshold",
+          "Empty query handled gracefully"
+        ]
+      },
+      "rubric_json": {
+        "skills": ["llm-integration", "databases"],
+        "checks": ["retrieval_relevance_fixture"]
+      }
+    },
+    {
+      "key": "AI-005",
+      "title": "Add safe order lookup tool",
+      "description": "Expose an order-lookup tool with permission checks, input validation, and audit logging. The tool must not expose other customers' orders.",
+      "sort_order": 5,
+      "status": "locked",
+      "depends_on": ["AI-002"],
+      "acceptance_criteria": {
+        "criteria": [
+          "Tool checks caller permissions",
+          "Audit event recorded per lookup",
+          "Unauthorized lookup denied"
+        ]
+      },
+      "rubric_json": {
+        "skills": ["security", "llm-integration"],
+        "checks": ["tool_permissions", "audit"]
+      }
+    },
+    {
+      "key": "AI-006",
+      "title": "Evaluation and monitoring",
+      "description": "Add evaluation over a golden dataset, latency metrics, and a simple monitoring endpoint summarizing quality signals.",
+      "sort_order": 6,
+      "status": "locked",
+      "depends_on": ["AI-004"],
+      "acceptance_criteria": {
+        "criteria": [
+          "Golden dataset evaluated",
+          "Latency p50/p95 reported",
+          "Metrics derived from persisted evidence"
+        ]
+      },
+      "rubric_json": {
+        "skills": ["testing", "llm-integration", "engineering-practices"],
+        "checks": ["golden_dataset", "latency_metrics"]
+      }
+    }
+  ]
+}
