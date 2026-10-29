@@ -5,9 +5,9 @@ Modular monolith. PostgreSQL is the source of truth. No microservices.
 ## Layout
 
 - `web/` — Next.js + TypeScript + Tailwind + shadcn/ui
-- `api/` — FastAPI + Pydantic + SQLAlchemy 2 + Alembic (modules: auth, projects/sprints/tasks; agents/github/evaluations land in later phases)
-- `worker/` — Redis-backed async jobs (Phase 01 stub; evaluation in Phase 06)
-- `curriculum/` — Versioned project/sprint/task definitions (`sprint-01.json`)
+- `api/` — FastAPI + Pydantic + SQLAlchemy 2 + Alembic (modules: auth, users, enrollments, diagnostics, projects, tasks, progress, roadmap, team; agents/github/evaluations land in later phases)
+- `worker/` — Redis-backed async jobs (Phase 01–02 stub; evaluation in Phase 06)
+- `curriculum/` — Versioned project/sprint/task definitions (`sprint-01.json`) and roadmap (`roadmap-12wk.json`)
 - `infra/` — Docker Compose (PostgreSQL, Redis, api, worker, web)
 - `tests/` — API/integration tests
 
@@ -19,6 +19,11 @@ Modular monolith. PostgreSQL is the source of truth. No microservices.
 - **ADR-004 Seed:** Idempotent seed from `curriculum/sprint-01.json`; exactly AI-001–AI-006 with PRD dependencies. Re-running seed is a no-op.
 - **ADR-005 External adapters:** LLM/STT/TTS/GitHub/runner are not implemented in Phase 01. They will sit behind typed interfaces with explicit `MOCK` mode; nothing is claimed `LIVE` until the API preflight verifies it.
 
-## Data flow (Phase 01)
+## Decisions (Phase 02)
 
-Browser → Next.js → FastAPI (`/api/auth/*`, `/api/projects/current`, `/api/sprints/current`) → PostgreSQL. Redis/worker idle until Phase 06.
+- **ADR-006 Task transitions:** Student-driven status changes go through `POST /api/tasks/{id}/transitions` against a server-side allowlist (`todo↔in_progress` only). `approved` is rejected with 409 (approval belongs to the Phase 07 progression service), locked/in-review/blocked tasks reject with 409, and unknown targets with 422. Every transition writes an `ActivityEvent`.
+- **ADR-007 Content boundaries:** Roadmap weeks live in versioned `curriculum/roadmap-12wk.json`; diagnostic answers stay in server-side code (`api/app/diagnostics_data.py`) and are never serialized; the team directory is static content until Phase 03 adds versioned role configs and the orchestrator. Progress metrics are derived from persisted rows, never fabricated.
+
+## Data flow (Phase 02)
+
+Browser → Next.js (`/onboarding`, `/board`, `/tasks/[id]`, `/team`, `/roadmap`, `/progress`) → FastAPI (enrollment, diagnostics, tasks, progress, roadmap, team) → PostgreSQL. Redis/worker idle until Phase 06.

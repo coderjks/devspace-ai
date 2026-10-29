@@ -1,0 +1,86 @@
+# DevSpace AI — Phase-aware execution plan for the build-screen workflow.
+# Execution order within a phase is the listed screen order (may differ from
+# manifest numbering). Phases without screens are manual gates: they carry
+# deliverables and can never be auto-completed or silently skipped.
+# Screen authority stays in automation/screens-library/screens.json; this file
+# only orders them. Statuses live in automation/orchestration-state.json.
+
+version: 1
+phases:
+  - phase: "01"
+    name: "Foundation & Authentication"
+    screens: ["page-01", "page-02", "page-18"]
+    screen_optional: ["page-18"]
+    note: "Already executed. Pages 01-02 implemented; page-18 optional. Do not rebuild working auth."
+
+  - phase: "02"
+    name: "Workplace & Sprint Management"
+    screens: ["page-03", "page-04", "page-05", "page-06"]
+    screen_optional: []
+    note: "Begins with page-03. Page-03 implemented; pages 04-06 are new."
+
+  - phase: "03"
+    name: "AI Team"
+    screens: ["page-08", "page-07"]
+    screen_optional: []
+    note: "Directory (08) before chat (07): roster and routes exist before the conversation UI."
+
+  - phase: "04"
+    name: "Standups"
+    screens: ["page-09", "page-10"]
+    screen_optional: []
+
+  - phase: "05"
+    name: "GitHub Integration"
+    screens: ["page-11", "page-12"]
+    screen_optional: []
+
+  - phase: "06"
+    name: "Code Evaluation"
+    screens: ["page-13"]
+    screen_optional: []
+
+  - phase: "07"
+    name: "Learning & Progression"
+    screens: ["page-14", "page-15"]
+    screen_optional: []
+
+  - phase: "08"
+    name: "Voice Infrastructure"
+    screens: []
+    screen_optional: []
+    non_ui_deliverables:
+      - "STT/TTS provider adapters behind typed interfaces (verified providers only)"
+      - "Push-to-talk session + turn persistence, no raw audio by default"
+      - "Text fallback for STT/TTS/timeout failures"
+    note: "Backend/services only. Manual gate: lead reports deliverables, developer approves."
+
+  - phase: "09"
+    name: "Voice Interactions"
+    screens: ["page-16"]
+    screen_optional: []
+
+  - phase: "10"
+    name: "Learning Progress"
+    screens: ["page-17"]
+    screen_optional: []
+
+  - phase: "11"
+    name: "Integration & QA"
+    screens: []
+    screen_optional: []
+    non_ui_deliverables:
+      - "Full demo-critical journey test end to end"
+      - "docs/qa-report.md with PASS/FAIL/BLOCKED/UNTESTED"
+      - "Security, isolation, webhook, and idempotency verification"
+    note: "Testing and integration. Manual gate, same rule as phase 08."
+
+  - phase: "12"
+    name: "Deployment & Demo"
+    screens: []
+    screen_optional: []
+    non_ui_deliverables:
+      - "Production Dockerfiles, migrations, HTTPS/CORS/secrets"
+      - "Deployed E2E validation with explicit LIVE/MOCK/PARTIAL/DEFERRED matrix"
+      - "Demo seed/reset and 5-minute demo script"
+    note: "Deployment and demo. Manual gate, same rule as phase 08."

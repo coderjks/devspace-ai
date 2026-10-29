@@ -1,34 +1,46 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Metadata } from "next";
+import { AiTeam } from "@/components/landing/ai-team";
+import { Faq } from "@/components/landing/faq";
+import { Features } from "@/components/landing/features";
+import { FinalCta } from "@/components/landing/final-cta";
+import { Footer } from "@/components/landing/footer";
+import { Hero } from "@/components/landing/hero";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { Navbar } from "@/components/landing/navbar";
+import { Roadmap } from "@/components/landing/roadmap";
+
+export const metadata: Metadata = {
+  title: "DevSpace AI — Your First Engineering Team. Powered by AI.",
+  description:
+    "Experience real engineering workflows, collaborate with AI teammates, ship code, and build the skills that turn students into job-ready developers.",
+  openGraph: {
+    title: "DevSpace AI — Your First Engineering Team. Powered by AI.",
+    description:
+      "An AI-native simulated engineering internship: sprint tickets, AI teammates, real GitHub PRs, and competency-based progression.",
+    type: "website",
+  },
+};
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center px-6 py-16">
-      <p className="text-sm font-medium text-muted-foreground">DevSpace AI — Simulation</p>
-      <h1 className="mt-3 text-4xl font-bold tracking-tight">Applied AI Engineering Internship</h1>
-      <p className="mt-4 text-base leading-7 text-muted-foreground">
-        A simulated workplace where you join a virtual engineering team, work a six-ticket sprint,
-        collaborate with AI teammates, and ship real GitHub pull requests. This is a simulation,
-        not employment or accredited training.
-      </p>
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Phase 01 — Foundation ready</CardTitle>
-          <CardDescription>Sign in with the seeded demo account to fetch the persisted sprint.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Button asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/dashboard">Dashboard</Link>
-          </Button>
-        </CardContent>
-      </Card>
-      <p className="mt-6 text-xs text-muted-foreground">
-        Demo: demo@devspace.ai / DemoPass123! (seeded, change in production)
-      </p>
-    </main>
+    <div className="min-h-screen bg-background text-foreground antialiased">
+      <a
+        href="#how-it-works"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
+      <Navbar />
+      <main>
+        <Hero />
+        <HowItWorks />
+        <AiTeam />
+        <Features />
+        <Roadmap />
+        <Faq />
+        <FinalCta />
+      </main>
+      <Footer />
+    </div>
   );
 }

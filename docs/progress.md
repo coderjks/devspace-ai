@@ -1,9 +1,9 @@
 # DevSpace AI — Progress Tracker
 
-**Last updated:** 2026-10-28 (Phase 01 committed on feat/01-foundation; ready for model switch)
+**Last updated:** 2026-10-28 (landing, auth, theme system and skill committed on feat/02-onboarding-board)
 **Canonical PRD:** `docs/prd/requirements.md` v2.2.1
 **Execution order:** `docs/prompts/build-playbook.md` v2.2.1
-**Gate state:** Phase 01 DONE and verified. Awaiting approval for API preflight / Phase 02. Do not start the next phase without explicit instruction.
+**Gate state:** Phase 02 DONE, verified and committed on `feat/02-onboarding-board`, plus committed landing/auth/theme/skill work (see change log). API preflight still NOT STARTED (needs Meta credentials). Do not start Phase 03 without explicit instruction.
 **Handoff:** New models/engineers start at [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md), then read this file.
 
 ---
@@ -108,18 +108,18 @@ Voice: `POST /api/voice/sessions`, `POST /api/voice/sessions/{id}/turns`, `POST 
 
 | Area | Implementation | Status |
 |---|---|---|
-| `web/` | Next.js 14 + TS + Tailwind + shadcn/ui (Button/Input/Card), `/`, `/login`, `/dashboard` (persisted sprint list) | **DONE** — `npm run build` + `typecheck` pass |
-| `api/` | FastAPI modular monolith: `app/config, database, models, security, schemas, dependencies, seed`, routers `health/auth/projects`, Alembic `20261027_0001` | **DONE** |
+| `web/` | Next.js 14 + TS + Tailwind + shadcn/ui: `/`, `/login`, `/onboarding`, `/dashboard`, `/board` (Kanban), `/tasks/[id]`, `/team`, `/roadmap`, `/progress` + shared `SiteHeader` | **DONE** — `npm run build` + `typecheck` pass |
+| `api/` | FastAPI modular monolith: Phase 01 modules + routers `users/enrollments/diagnostics/tasks/progress/roadmap/team`, shared `task_view`; Alembic `20261027_0001` → `20261028_0002` | **DONE** |
 | `worker/` | Redis ping stub (no jobs; Phase 06) | DONE (stub) |
-| `curriculum/` | `sprint-01.json`: support-backend project + AI-001–AI-006 with dependencies/rubrics | DONE |
+| `curriculum/` | `sprint-01.json` + `roadmap-12wk.json` (12 weeks, week 1 active) | DONE |
 | `infra/` | `docker-compose.yml`: postgres:16, redis:7, api, worker, web; `${POSTGRES_PORT:-5432}`/`${REDIS_PORT:-6379}`; `config` validates | DONE |
-| `tests/` | `tests/api/` 14 tests (health, auth, projects/ownership, seed/migrations) | DONE — 14 passed |
-| `docs/architecture/` | `README.md` ADR-001–005 | DONE |
+| `tests/` | `tests/api/` 32 tests (Phase 01 suite + enrollment/onboarding, transitions, workplace, onboarding columns) | DONE — 32 passed |
+| `docs/architecture/` | `README.md` ADR-001–007 | DONE |
 | `docs/handoff.md` | Model-switch handoff: read order, run commands, pitfalls, gate | DONE |
 | `.env.example` / `README.md` | Typed template (direct vs pooled DB notes) + setup commands | DONE |
-| Database / migrations | Alembic upgrade/downgrade cycle verified on SQLite and Postgres 16 (Docker, port 5433); 11 tables | DONE |
-| Auth | Register/login/logout, httpOnly cookie + Bearer, `GET /api/auth/me`, owner-scoped enrollments; PBKDF2-SHA256 + HS256 JWT | DONE |
-| Git history | `main` = `3e39603` (docs only); `feat/01-foundation` = `97290ee` (Phase 01, 51 files); working tree clean at handoff update | COMMITTED (not pushed) |
+| Database / migrations | Alembic `0001`→`0002` upgrade verified on Postgres 16 (Docker, port 5433); enrollments carry `experience_level` + `diagnostic_result`; 11 tables | DONE |
+| Auth | Register/login/logout, httpOnly cookie + Bearer, `GET /api/auth/me`, `PATCH /api/users/me`, owner-scoped enrollments; PBKDF2-SHA256 + HS256 JWT | DONE |
+| Git history | `main` = `3e39603` (docs only); `feat/01-foundation` = `ac23eb3`; `feat/02-onboarding-board` = `5cc676e` (Phase 02) → `b0c9ba2` (landing) → `bfcb827` (auth) → `1c9efac` (theme) → `8541c86` (skill) + this docs update | COMMITTED (not pushed) |
 
 ---
 
@@ -132,7 +132,7 @@ Status key: `DONE` verified · `IN PROGRESS` · `NOT STARTED` · `BLOCKED` (name
 | **Prompt 00** — Orientation & guardrails | Read PRD/playbook/AGENTS.md, inventory repo, write this tracker, propose Phase 01, stop | This file exists; no features implemented | **DONE** (this pass) |
 | **API preflight** — Validate runtime model access | Inspect Meta docs + credentials; server-side smoke test; verify base URL, auth, model IDs, structured output/tool calling, streaming, limits/pricing; mock mode if unverifiable; stop | Observed provider response or documented `BLOCKED` with exact missing config; no frontend keys | **NOT STARTED** — no credentials supplied |
 | **Phase 01** — Foundation, DB, auth | Monorepo scaffold, Docker Compose PG+Redis, typed config, health checks, `.env.example`, Alembic models (User…ActivityEvent), seed demo project + AI-001–AI-006, email/password auth + logout + protected routes, auth/migration/ownership tests. No AI/voice/GitHub. | Sign in; fetch authenticated student; fetch persisted seeded project; restart retains data | **DONE** — verified §9 |
-| **Phase 02** — Onboarding, dashboard, board | Onboarding, enrollment, dashboard, team directory, 12-week roadmap (one full sprint), Kanban + task detail, progress view; backend-enforced transitions; students cannot mark evaluated tasks Done | Enroll → open ticket → start work → persisted dashboard updates | NOT STARTED |
+| **Phase 02** — Onboarding, dashboard, board | Onboarding (profile, experience, goals, diagnostic), enrollment, dashboard, team directory, 12-week roadmap (one full sprint), Kanban + task detail, progress view; backend-enforced transitions; students cannot mark evaluated tasks Done | Enroll → open ticket → start work → persisted dashboard updates | **DONE** — verified §10 |
 | **Phase 03** — Runtime provider + six-role orchestration | Typed `LLMProvider` + Meta adapter (verified IDs only) with explicit mock; `AgentOrchestrator`, six role configs, scoped tools, shared context, separate conversations, usage logging, chat endpoints + UI | Tech Lead discusses current task; Scrum Master knows sprint status; context persists | NOT STARTED |
 | **Phase 04** — Standups & role tools | Role-specific tools; standup flow (ask → typed summary → proposed changes → confirm → persist blocker + audit, idempotent); blocker visible to Tech Lead. Text only. | Confirmed blocker on board + in Tech Lead conversation | NOT STARTED |
 | **Phase 05** — GitHub App & PRs | Least-privilege App install, repo linking, short-lived tokens, HMAC webhook on raw body, PR opened/synchronize/reopened/closed, delivery/repo/PR/SHA/task persistence, dedupe, UI status. No code execution yet. | Real PR maps to correct task; push updates SHA; duplicate webhook is no-op | NOT STARTED |
@@ -220,6 +220,28 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-10-27 | Phase 01 implemented on `go`: `docs/prompt/`→`docs/prompts/`, monorepo + auth + seed + migrations + tests. Verified (§9). Awaiting approval for API preflight / Phase 02. |
 | 2026-10-27 | Added [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md) for model switching (read order, verified run/test commands, integration status, pitfalls, security boundaries, next-gate rules). No feature changes; no commits. |
 | 2026-10-28 | First commits created: `main` `3e39603` docs-only (`docs:`), then branch `feat/01-foundation` `97290ee` (`feat(foundation):`, 51 Phase 01 files; 14 tests re-verified before commit). Working tree clean. Not pushed. Prepared for Muse Spark 1.3 model switch — see handoff §3/§12 for the starter prompt. |
+| 2026-10-28 | Branch `feat/02-onboarding-board` created from `feat/01-foundation`; Phase 02 implemented (enrollment/onboarding API, transitions, progress, roadmap, team; 6 new pages) and verified (§10). Committed as `5cc676e` (`feat(onboarding):`, 31 files). API preflight still pending. |
+| 2026-10-28 | Local setup run for user review (Docker Postgres/Redis, migrated + seeded, API :8000, web :3000). Fixed browser login failure by allowing both `localhost:3000` and `127.0.0.1:3000` CORS origins; demo login verified live. |
+| 2026-10-28 | Landing page redesigned on `feat/02-onboarding-board` (dark, `components/landing/` ×11 + `app/page.tsx`; CTAs → `/login`, `/onboarding`; no legal links — those pages don't exist). `typecheck` + `build` pass; served HTML verified (1 h1, all anchors, disclaimer). No browser visual test performed. Uncommitted; no phase advanced. |
+| 2026-10-28 | Landing page rebuilt against the supplied reference image on `feat/02-onboarding-board`: tokens `#09090F/#14141F/#8B5CF6/#38BDF8`, two-column hero with dashboard preview, journey/AI-team/workflows/FAQ/CTA/footer; roadmap+comparison sections removed; “Trusted by” logos omitted (fabricated endorsements banned). `typecheck` + `build` pass; served HTML + stylesheet verified. No browser visual test performed. Uncommitted; no phase advanced. |
+| 2026-10-28 | Auth page rebuilt against the Page 02 reference on `feat/02-onboarding-board`: split-screen (`components/auth/` ×7 + `app/login/page.tsx`), brand panel with Kanban/chat preview, tabbed Sign In/Sign Up wired to the existing email/password contract. Omitted per brief+contract: OAuth buttons (no provider configured), forgot-password link (no endpoint), Terms/Privacy links (no pages), testimonial and trust logos (unverified). `typecheck` + `build` pass; served HTML verified. No browser visual test performed. Uncommitted; no phase advanced. |
+| 2026-10-28 | Fixed “signup not working”: the long-running dev server was serving HTML but 404ing all JS chunks (stale incremental cache), leaving the page non-interactive; the register API itself verified 201 throughout. Restarted dev with cleared `.next`; all chunks + CSS now 200. If interactivity ever dies again while HTML still loads, check chunk URLs before touching code. |
+| 2026-10-28 | Dual-theme design system implemented on `feat/02-onboarding-board` (uncommitted): var-driven Tailwind (`darkMode: class`) + `next-themes` (Light default, Dark, System, persisted), tokens for bg/fg/card/popover/primary/secondary/muted/accent/border/input/ring/destructive/success/warning/info/chart×5/sidebar, radius 12/10/8, 16px base, global focus ring + reduced-motion kill-switch, ThemeToggle in landing nav + app header, landing + auth migrated off hardcoded colors, new `docs/design/design-system.md`. `typecheck` + `build` + 32 pytest pass; served CSS contains both themes; SSR defaults to light. Theme switching/persistence code-verified via next-themes, not browser-tested. No backend changes; no phase advanced. |
+| 2026-10-28 | Theme toggle replaced the confusing Light→Dark→System cycle button with an explicit menu (Light/Dark/System + checkmark, Escape/outside-click close). A transient `next build` failure (`Cannot find module for page: /board`) was stale `.next` contention with the running dev server, not code — clean rebuild passes 11/11. Served HTML + CSS re-verified. |
+| 2026-10-28 | Committed the UI work on `feat/02-onboarding-board` as reviewed units: `b0c9ba2` feat(landing, 11 files), `bfcb827` feat(auth, 8 files), `1c9efac` feat(theme incl. design-system.md, 15 files), `8541c86` feat(skills, token-efficient-research). `reference_images/` (3.3MB supplied PNGs) deliberately left untracked. Not pushed. |
+| 2026-10-28 | Premium UI polish pass on `feat/02-onboarding-board` (uncommitted): CSS-only motion system (Reveal + keyframes, no new deps), elevation tokens, display typography, bento workflows with PR showcase, 12-week roadmap strip, animated FAQ, sticky blurred nav/headers, shared StatusBadge/Skeleton/EmptyState, skeleton loading on board/dashboard/task, auth transitions + spinner buttons. Palette unchanged. No backend changes; no phase advanced. |
+| 2026-10-28 | Committed the polish pass as `feat(polish)` (37 files, incl. `.gitignore` for `reference_images/`); fixed a stale-`.next` unstyled-page incident by restarting the user dev server with a cleared cache (CSS 404 → 200). `typecheck` + `build` (11/11) + 32 pytest pass. Not pushed. |
+| 2026-10-28 | Orchestration setup on `feat/02-onboarding-board` (uncommitted): `automation/orchestrator.md`, `automation/subagent-contracts.md`, `automation/orchestration-state.json`, `automation/README.md`, `.agents/skills/build-screen/SKILL.md` (+ worktree caveat). Page-03 smoke test: manifest/prompt/image/skill-discovery/subagent-roundtrip/worktree-cycle/stop-clean all PASS; no app code changed. Pages 01–03 marked `done-prior` in state. Not pushed. |
+| 2026-10-28 | Phase-aware execution added (uncommitted): `automation/execution-plan.yaml` (12 phases, plan order, 08/11/12 manual gates), skill §§5–6 (selection + intents), state extended compatibly (phase/active/approved/blocked/non-UI), orchestrator §6 pointer. Read-only validation 10/10 PASS; next eligible = page-01 (done-prior, needs validation + approval, not rebuild). No implementation agents invoked; no app logic changed. Not pushed. |
+| 2026-10-28 | Workflow ran `Build next screen` → page-01 (uncommitted): selection per plan, no FE/BE builders (already implemented, no rebuild), `qa-page-01` validation only — typecheck PASS, build 11/11 PASS, all routes/anchors 200, reference fidelity confirmed, visual QA UNTESTED. State `awaiting_approval`. No app code changed. Not pushed. |
+| 2026-10-28 | Approved page-01 (explicit instruction). `qa-page-02` validation only — /login 200 themed, OAuth/forgot/legal correctly absent, spinner/alert/409 states PASS, 4 auth tests PASS, live register+login returned token, visual UNTESTED. Page-02 approved (explicit instruction + clean QA). Next eligible: page-03 (depends on approved page-02). No app code changed. Not pushed. |
+| 2026-10-28 | Workflow ran `Build next screen` → page-03 (uncommitted): `qa-page-03` validation only — route/states/typecheck/6 backend tests/live E2E PASS, visual UNTESTED, but DEVIATIONS vs prompt: 3-step not 4-step, no review step, no completion guard, no back-nav, wizard state lost on reload, step-2 load-failure nit. State `awaiting_approval`; needs approve-as-is or fix decision. Also repaired `orchestration-state.json` duplicate keys from successive edits (single clean object, phase 02). No app code changed. Not pushed. |
+| 2026-10-28 | Fixed page-03 gaps via `fe-page-03` (uncommitted, `web/app/onboarding/page.tsx` only): 4-step wizard + review/confirm, enrollment completion guard, Back on steps 2–4, sessionStorage restore, gated question load; `qa-page-03-reverify` all PASS (typecheck 0, 6/6 backend tests, live E2E; live reload UNTESTED). Lead added one-line guard disabling Submit with zero questions; typecheck clean, /onboarding 200. State `awaiting_approval`. Not pushed. |
+| 2026-10-28 | Page-03 APPROVED (explicit instruction, gaps fixed + re-verified). Phase 02 screens done (01–03 approved; page-18 optional skipped). Next eligible: page-04 (depends on approved page-03). Changed, uncommitted: `web/app/onboarding/page.tsx`. Not pushed. |
+| 2026-10-28 | Autonomous Phase 02 completion (uncommitted): page-04 QA→`fe-page-04` (next-action, activity, teammates, disabled Phase 04/05 strip) re-verified PASS; page-05 QA→`fe-page-05` (search + board/list toggle) re-verified PASS; page-06 root-caused (Next15 `use(params)` 500 on Next14) + fixed + verified PASS. Journey E2E green (register→detail→transition 200s, approve 409, unauth 401, 8/8 routes 200); 32 pytest + typecheck clean. Phase 02 `awaiting_approval`, pages 04–06 NOT approved. Changed: dashboard, board, task-detail pages. Not pushed. |
+| 2026-10-28 | Pages 04–06 APPROVED (explicit instruction). Phase 02 complete: screens 01–06 approved (page-18 optional skipped). State pointer advanced to page-07; Phase 03 needs API preflight first. Not pushed. |
+| 2026-10-28 | Post-approval shell rework via `fe-app-shell` (uncommitted): new `web/components/app-shell.tsx` (sidebar + slim topbar + full-width, mobile drawer), 6 routes migrated off deleted SiteHeader, new `/profile` (read-only email/enrollment + PATCH name). `qa-app-shell` regression PASS, typecheck 0, all routes 200, visually confirmed via headless screenshots. Not pushed. |
+| 2026-10-28 | Headless Chrome pass (Playwright-core + installed Chrome, throwaway enrolled user): login→dashboard→board(search/clear/list)→task all render correctly — screenshots confirm next-action, activity, teammates, coming-next, StatusBadges, review card; search filters to AI-001 and clears to 6; list toggle flips aria-pressed; mobile landing zero h-overflow. Remaining script-side (not app) issues: dashboard regex was case-sensitive (kicker is uppercase — visually confirmed present), dark test used media emulation but theme is class-based (needs toggle click), transition step assumed todo but task was already in_progress (API-proven separately). Dark-theme pixels + live reload-restore still unverified. Screenshots in /tmp/verify/shots (not committed). |
 
 ---
 
@@ -243,3 +265,26 @@ Commands run in this session; exit statuses observed, not assumed.
 | Compose | `docker compose config` | Valid |
 
 **Known limitations:** Docker full-stack (`up --build` for api/web/worker images) was not run end-to-end (only Postgres/Redis containers + host API/Web were exercised). Host Postgres on :5432 belongs to another stack and was not touched; our Compose defaults remain :5432/:6379 with port overrides. Local servers were stopped after verification — this macOS host cannot detach a durable server (`setsid` unavailable), so nothing is left running. Browser interaction (click-through login) was verified via HTTP + build, not a real browser. (Commits were created afterwards — see change log 2026-10-28.)
+
+---
+
+## 10. Phase 02 verification evidence (2026-10-28, branch `feat/02-onboarding-board`)
+
+Commands run in this session; exit statuses observed, not assumed.
+
+| Check | Command | Result |
+|---|---|---|
+| API tests | `DATABASE_URL=sqlite… .venv/bin/python -m pytest tests/ -q` | **32 passed** (Phase 01 suite + enrollment/onboarding, transitions, workplace, onboarding columns) |
+| Lint | `.venv/bin/ruff check api/app/ tests/` | All checks passed (after `--fix` import sort) |
+| Types (API) | `.venv/bin/mypy api/app/ --ignore-missing-imports` | Success, 22 files |
+| Alembic (Postgres) | Compose Postgres 16 on `POSTGRES_PORT=5433` + `alembic upgrade head` | `20261027_0001 → 20261028_0002` clean; seed ×2 idempotent |
+| Live E2E | Fresh user: register → enroll → diagnostic (4 questions) → task detail → `todo→in_progress` → progress/roadmap/team | Enroll OK; 3 criteria shown; transition `in_progress`; progress `total 6, started 1`; 12 weeks; 6 members; `→approved` rejected 409 |
+| Transition guards | Live + tests: locked task, `approved` target, unknown status, unauthenticated | 409 / 409 / 422 / 401 as designed; `approved` error names evaluation |
+| Restart persistence | Kill + restart API, re-login as demo | Enrollments 1, tasks 6 retained; AI-001 restored to `todo` |
+| Web types/build | `npm run typecheck`, `npm run build` (in `web/`) | Both pass; routes `/`, `/login`, `/onboarding`, `/dashboard`, `/board`, `/team`, `/roadmap`, `/progress`, `/tasks/[id]` |
+| Web+API smoke | Next `start` :3000 + API :8000, `curl` all routes | All 8 routes 200 |
+| Compose | `docker compose config` | Valid |
+
+**Acceptance:** Enroll → open ticket → start work → persisted dashboard updates ✓ (verified live with a fresh user).
+
+**Known limitations:** Diagnostic answers are a fixed server-side set (calibration only, not proctored). Team directory is static content (chat arrives in Phase 03). No Vitest suite yet — web covered by `typecheck` + `build` (Q10 partial). Full-Compose image stack still `UNTESTED`. Servers stopped after verification; nothing running. Phase 02 uncommitted on `feat/02-onboarding-board`.

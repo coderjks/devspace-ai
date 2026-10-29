@@ -1,0 +1,17 @@
+{
+  "track": "applied-ai-engineering",
+  "weeks": [
+    {"week": 1, "title": "Support Backend Foundations", "summary": "Ticket creation API, authorization, LLM summarization, retrieval, safe tool use, evaluation. Fully specified six-ticket sprint.", "status": "active"},
+    {"week": 2, "title": "API Design and Validation", "summary": "Contract-first endpoints, versioning, error taxonomy.", "status": "upcoming"},
+    {"week": 3, "title": "PostgreSQL in Practice", "summary": "Schema design, migrations, indexing, transactions.", "status": "upcoming"},
+    {"week": 4, "title": "Authentication and Authorization", "summary": "Sessions, OAuth, RBAC, security reviews.", "status": "upcoming"},
+    {"week": 5, "title": "LLM Integration Patterns", "summary": "Structured output, retries, fallbacks, cost control.", "status": "upcoming"},
+    {"week": 6, "title": "Retrieval-Augmented Generation", "summary": "Chunking, embeddings, relevance evaluation.", "status": "upcoming"},
+    {"week": 7, "title": "Tool Use and Agents", "summary": "Scoped tools, permissions, audit trails.", "status": "upcoming"},
+    {"week": 8, "title": "Testing and Evaluation", "summary": "Golden datasets, regression suites, quality gates.", "status": "upcoming"},
+    {"week": 9, "title": "Observability and Monitoring", "summary": "Latency metrics, tracing, alerting.", "status": "upcoming"},
+    {"week": 10, "title": "Security and Privacy", "summary": "Injection defense, secrets handling, data minimization.", "status": "upcoming"},
+    {"week": 11, "title": "Capstone Project", "summary": "End-to-end AI engineering project with review.", "status": "upcoming"},
+    {"week": 12, "title": "Portfolio and Demo", "summary": "Portfolio assembly, demo rehearsal, final review.", "status": "upcoming"}
+  ]
+}

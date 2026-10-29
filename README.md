@@ -4,7 +4,7 @@ AI-native simulated engineering internship. Students join a virtual engineering 
 
 > This is a **simulation**, not employment, accredited training, or a guaranteed placement.
 
-**Status (Phase 01):** Foundation, database, and authentication are implemented. AI teammates, GitHub evaluation, and voice land in later phases and are currently `UNTESTED`. See [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md).
+**Status (Phase 02):** Foundation, auth, onboarding, enrollment, sprint board, task detail, team directory, roadmap, and progress views are implemented. AI teammates, GitHub evaluation, and voice land in later phases and are currently `UNTESTED`. See [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md).
 
 ## Stack
 
@@ -30,6 +30,7 @@ docker compose -f infra/docker-compose.yml up --build
 - API docs: http://localhost:8000/docs
 - Health: http://localhost:8000/health and http://localhost:8000/health/db
 - Demo login: `demo@devspace.ai` / `DemoPass123!` (seeded; change outside local dev)
+- After sign-in, complete `/onboarding` (profile, optional diagnostic, enrollment), then use `/board` for the Kanban, `/tasks/{id}` for ticket detail, `/team` for the directory, `/roadmap` for the 12-week plan, and `/progress` for evidence-backed stats
 
 ## Quick start (host, without Docker for API/Web)
 

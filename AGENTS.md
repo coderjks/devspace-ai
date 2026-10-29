@@ -84,4 +84,56 @@ For every requested phase:
 ## Demo-critical journey
 Onboard -> view sprint -> talk to AI team -> voice standup -> confirm blocker -> Tech Lead sees blocker -> submit real GitHub PR -> sandbox tests + AI review -> progressive hints -> corrected PR -> deterministic unlock -> progress dashboard.
 
+
+
+## UI Development — Automatic Context Loading
+
+When implementing or modifying any DevSpace AI UI screen:
+
+1. Follow this AGENTS.md file as the persistent engineering instruction source.
+2. Read `docs/design/design-system.md` if it exists.
+3. Identify the relevant requirements in `docs/prd/requirements.md`. Read only the sections necessary for the requested screen.
+4. Read the current development phase in `docs/progress.md` and relevant handoff details in `docs/phase-handoff.md` if present.
+5. Consult `docs/prompts/build-playbook.md` only when the UI task is part of an active development phase or affects its acceptance criteria.
+6. Read the relevant screen specification under `docs/design/screen-specs/` if available.
+7. Inspect existing frontend components, routes, design tokens, and API contracts before implementing.
+8. Use shadcn/ui as the default component library, Lucide React for icons, and the existing Tailwind design tokens.
+9. Reuse existing components and preserve authentication, routing, backend integrations, and application behavior.
+10. If a reference image is supplied, use it as the visual target while treating the PRD and actual API contracts as authoritative for functionality.
+11. Implement the requested screen, run relevant checks, and fix verified issues.
+12. Automatically update progress and phase-handoff documentation when the task affects the current development phase.
+
+## DevSpace AI — Mandatory UI Design System
+
+All frontend work must follow `docs/design/design-system.md`.
+
+The application uses two coordinated themes:
+- Light: Soft Slate + Indigo (default)
+- Dark: Midnight Slate + Soft Blue
+
+Use shadcn/ui as the primary component system, Tailwind CSS semantic tokens, and Lucide React icons.
+
+Never introduce the previous neon-violet, near-black visual theme.
+
+Do not hardcode theme-specific colors in ordinary components. Use semantic CSS variables and Tailwind utilities.
+
+All screens must support Light, Dark, and System preferences.
+
+Prioritize readability, accessible contrast, comfortable typography, restrained decoration, responsive layouts, and consistent navigation.
+
+Before implementing a UI screen, inspect existing shared components and read the relevant design-system and PRD requirements.
+
+Reuse established layouts and components. Do not create an independent visual style for each page.
+
+When a supplied reference image conflicts with the current design system, preserve the reference's layout and information hierarchy but apply the current DevSpace AI theme.
+
+Do not modify unrelated application functionality during UI work.
+
+Do not repeatedly read the entire PRD or playbook when only a small section is relevant.
+
+Do not begin another screen or development phase without explicit approval.
+
+
 **Do not proceed to a new phase without the user's explicit instruction.**
+
+

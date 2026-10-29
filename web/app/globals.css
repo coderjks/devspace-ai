@@ -2,5 +2,218 @@
 @tailwind components;
 @tailwind utilities;
 
-* { border-color: hsl(214 32% 91%); }
-body { background: hsl(0 0% 100%); color: hsl(222 47% 11%); }
+@layer base {
+  :root {
+    /* LIGHT — Soft Slate + Indigo (default) */
+    --background: 220 23% 97%;
+    --foreground: 217 33% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 217 33% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 217 33% 17%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 217 33% 17%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 40%;
+    --accent: 226 100% 97%;
+    --accent-foreground: 243 75% 45%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 76% 32%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 95% 37%;
+    --warning-foreground: 0 0% 100%;
+    --info: 221 83% 53%;
+    --info-foreground: 0 0% 100%;
+    --chart-1: 243 75% 59%;
+    --chart-2: 199 89% 48%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 32 95% 44%;
+    --chart-5: 330 81% 60%;
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 217 33% 17%;
+    --sidebar-primary: 243 75% 59%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 226 100% 97%;
+    --sidebar-accent-foreground: 243 75% 45%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 243 75% 59%;
+  }
+
+  .dark {
+    /* DARK — Midnight Slate + Soft Blue */
+    --background: 220 28% 13%;
+    --foreground: 216 33% 94%;
+    --card: 218 15% 18%;
+    --card-foreground: 216 33% 94%;
+    --popover: 218 15% 18%;
+    --popover-foreground: 216 33% 94%;
+    --primary: 221 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 19% 24%;
+    --secondary-foreground: 216 33% 94%;
+    --muted: 216 19% 24%;
+    --muted-foreground: 214 29% 78%;
+    --accent: 214 42% 25%;
+    --accent-foreground: 214 95% 87%;
+    --border: 217 19% 27%;
+    --input: 217 19% 27%;
+    --ring: 221 83% 62%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 69% 58%;
+    --success-foreground: 220 28% 10%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 220 28% 10%;
+    --info: 213 94% 68%;
+    --info-foreground: 220 28% 10%;
+    --chart-1: 221 83% 62%;
+    --chart-2: 199 89% 60%;
+    --chart-3: 142 69% 58%;
+    --chart-4: 43 96% 56%;
+    --chart-5: 330 81% 68%;
+    --sidebar: 220 28% 11%;
+    --sidebar-foreground: 216 33% 94%;
+    --sidebar-primary: 221 83% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 42% 25%;
+    --sidebar-accent-foreground: 214 95% 87%;
+    --sidebar-border: 217 19% 27%;
+    --sidebar-ring: 221 83% 62%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  code {
+    @apply rounded bg-muted px-1 py-0.5 text-[0.875em];
+  }
+
+  pre {
+    @apply overflow-x-auto rounded-lg border bg-muted/50 p-4 text-sm leading-6;
+  }
+  pre code {
+    @apply bg-transparent p-0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+@layer utilities {
+  /* Scroll-triggered reveal (paired with the Reveal component).
+     Initial state is applied only when JS is available (.js-reveal on <html>);
+     without JS the content renders normally. Delay via --reveal-delay. */
+  .js-reveal .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .js-reveal .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Hero entrance stagger: --enter-delay in ms, applied with animation-delay. */
+  .enter-rise {
+    animation: fade-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  /* Soft token-based radial glow for hero / CTA backdrops. Never a flat neon wash:
+     low-opacity primary/accent tints that adapt to the active theme. */
+  .glow-conic {
+    background:
+      radial-gradient(42rem 22rem at 15% -5%, hsl(var(--primary) / 0.14), transparent 60%),
+      radial-gradient(36rem 20rem at 85% 10%, hsl(var(--info) / 0.12), transparent 60%);
+  }
+  .dark .glow-conic {
+    background:
+      radial-gradient(42rem 22rem at 15% -5%, hsl(var(--primary) / 0.22), transparent 60%),
+      radial-gradient(36rem 20rem at 85% 10%, hsl(var(--info) / 0.16), transparent 60%);
+  }
+
+  /* Faint engineering grid texture (hero only). */
+  .bg-blueprint {
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 20%, black 30%, transparent 75%);
+  }
+
+  /* Loading skeleton shimmer. */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      100deg,
+      hsl(var(--muted)) 30%,
+      hsl(var(--muted-foreground) / 0.18) 50%,
+      hsl(var(--muted)) 70%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  /* FAQ accordion affordances (native <details>, CSS only). */
+  details.faq-item > div {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease-out;
+  }
+  details.faq-item[open] > div {
+    grid-template-rows: 1fr;
+  }
+  details.faq-item > div > p {
+    overflow: hidden;
+  }
+  details.faq-item summary svg {
+    transition: transform 0.2s ease-out;
+  }
+  details.faq-item[open] summary svg {
+    transform: rotate(180deg);
+  }
+}
