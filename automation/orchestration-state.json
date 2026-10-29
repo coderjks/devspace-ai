@@ -1,12 +1,12 @@
 {
   "workflow": "build-screen",
   "updated": "2026-10-28",
-  "current_phase": "05",
-  "current_screen": "page-11",
-  "active_screen": "page-11",
+  "current_phase": "08",
+  "current_screen": "page-16",
+  "active_screen": "page-16",
   "current_status": "awaiting_approval",
   "current_workstreams": [
-    "phase-05 github integration (not started)"
+    "phase-08 voice infrastructure (not started)"
   ],
   "completed_screens": [
     "page-01",
@@ -18,7 +18,11 @@
     "page-07",
     "page-08",
     "page-09",
-    "page-10"
+    "page-10",
+    "page-11",
+    "page-12",
+    "page-13",
+    "page-14"
   ],
   "approved_screens": [
     "page-01",
@@ -30,13 +34,13 @@
     "page-07",
     "page-08",
     "page-09",
-    "page-10"
-  ],
-  "pending_screens": [
+    "page-10",
     "page-11",
     "page-12",
     "page-13",
-    "page-14",
+    "page-14"
+  ],
+  "pending_screens": [
     "page-15",
     "page-16",
     "page-17",
@@ -149,11 +153,31 @@
       "backend_tests": "PASS (7 activity tests, 61 total)",
       "ui": "PASS (timeline, teammate comments, submissions sections; tsc + build clean)",
       "approved_by": "developer, explicit instruction 2026-10-29"
+    },
+    "page-11": {
+      "route": "PASS (/github 200 via build)",
+      "repos": "PASS (link/duplicate/unlink/validation/scoping tests)",
+      "webhook": "PASS (HMAC, dedupe, task mapping, close handling; live synthetic delivery)",
+      "approved_by": "developer, explicit instruction 2026-10-29"
+    },
+    "page-12": {
+      "submit": "PASS (manual PR URL + SHA, unlinked/Bad URL/SHA rules; per-ticket card + sidebar link)",
+      "approved_by": "developer, explicit instruction 2026-10-29"
+    },
+    "page-13": {
+      "report": "PASS (/submissions/[id] checks + findings + SHA + versions; 12 eval tests)",
+      "worker": "PASS (real queue job processed live)",
+      "approved_by": "developer, explicit instruction 2026-10-29"
+    },
+    "page-14": {
+      "policy": "PASS (denied->remediation, fixed->approved + exact-once unlock, 409/422/404 rules; live E2E)",
+      "ui": "PASS (/progression eligibility + competencies + hints)",
+      "approved_by": "developer, explicit instruction 2026-10-29"
     }
   },
   "blockers": [],
-  "approval": "phase-04 approved 2026-10-29",
-  "last_checkpoint": "Phases 03+04 approved. Pointer at page-11 (Phase 05 GitHub App). feat/04-standups stacked on feat/03, not pushed, not merged.",
+  "approval": "phases 05-07 approved 2026-10-29",
+  "last_checkpoint": "Phases 05-07 complete on feat/05-github, feat/06-evaluation, feat/07-progression. Pointer at Phase 08 (voice infra). Not pushed, not merged.",
   "screens": {
     "page-01": {
       "status": "approved",
@@ -196,16 +220,20 @@
       "note": "Activity feed sections verified live; approved by developer 2026-10-29"
     },
     "page-11": {
-      "status": "pending"
+      "status": "approved",
+      "note": "GitHub connection + webhook pipeline; approved 2026-10-29"
     },
     "page-12": {
-      "status": "pending"
+      "status": "approved",
+      "note": "PR submission + tracking; approved 2026-10-29"
     },
     "page-13": {
-      "status": "pending"
+      "status": "approved",
+      "note": "Evaluation report; approved 2026-10-29"
     },
     "page-14": {
-      "status": "pending"
+      "status": "approved",
+      "note": "Progression + unlock + remediation; approved 2026-10-29"
     },
     "page-15": {
       "status": "pending"

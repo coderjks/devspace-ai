@@ -1,9 +1,9 @@
 # DevSpace AI — Progress Tracker
 
-**Last updated:** 2026-10-29 (Phases 03 + 04 approved; trackers updated)
+**Last updated:** 2026-10-29 (Phases 05–07 approved; trackers updated)
 **Canonical PRD:** `docs/prd/requirements.md` v2.2.1
 **Execution order:** `docs/prompts/build-playbook.md` v2.2.1
-**Gate state:** Phases 03 + 04 DONE, verified and APPROVED (mock LLM path; live Meta preflight still needs credentials). Phase 03 committed + pushed on `feat/03-ai-orchestrator`; Phase 04 committed on `feat/04-standups` (stacked, not pushed, not merged). Pointer at Phase 05 (GitHub App). Do not start Phase 05 without explicit instruction.
+**Gate state:** Phases 05–07 DONE, verified and APPROVED (mock LLM path; live GitHub App + Meta preflight still need credentials). Committed on `feat/05-github` (`29109eb`), `feat/06-evaluation` (`e402287`), `feat/07-progression` (`e738d99`) — stacked, not pushed, not merged. Pointer at Phase 08 (voice infrastructure). Do not start Phase 08 without explicit instruction.
 **Handoff:** New models/engineers start at [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md), then read this file.
 
 ---
@@ -156,6 +156,8 @@ Legend (AGENTS.md § Engineering workflow): `LIVE` real provider verified · `MO
 | Integration | Phase introduced | Status | Evidence / blocker |
 |---|---|---|---|
 | Meta model runtime (LLM gateway, review/chat/hints) | API preflight, Phase 03 | **MOCK** (live UNTESTED) | Explicit mock adapter labeled in UI; Meta adapter fail-closed and unused. No credentials, base URL, or model IDs verified for this account. Do not assume endpoint/SDK. See §6 Q2. |
+| GitHub App (install, tokens, webhook) | Phase 05 | **MOCK-path live** (real github.com UNTESTED) | HMAC/dedupe/mapping verified with synthetic signed deliveries + manual mode. No App created, no installation, no webhook secret configured. See `docs/github-app-setup.md`. |
+| Isolated code runner / sandbox | Phase 06 | **Disabled by design** | Static non-executing checks only; no sandbox selected. Live execution stays off; mock review labeled advisory. |
 | Muse Spark 1.3 / Muse Wonder routing | API preflight | **UNTESTED** | Optional configurable routes per PRD §13; coding-IDE model choice is distinct from runtime routing. Never hardcode unverified IDs. |
 | Speech-to-text (STT) | Phase 08 | **UNTESTED** | No provider selected or verified. (Companion draft names `muse-voice-transcribe-1.0` for STT; v2.2.1 canonical text does not — treat as unverified until API preflight.) |
 | Text-to-speech (TTS) | Phase 08 | **UNTESTED** | No provider selected. Muse Voice Transcribe does not synthesize speech; separate TTS provider required. |
@@ -247,6 +249,9 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-10-29 | Phase 03 APPROVED (explicit instruction, mock path). Branch `feat/03-ai-orchestrator` pushed (`a2929c7` orchestration + mock-first provider, `3da05c1` chat UI, `aa9648c` tooling/trackers). Screens 01–08 approved. Meta preflight still pending credentials. |
 | 2026-10-29 | Phase 04 page-09 built on stacked `feat/04-standups`: Standup model + migration, idempotent propose/confirm, blocker on task + audit + Tech Lead system message, tool registry, `/standup` wizard + `/activity` history + sidebar links + board/task badges. Live E2E green; 54 pytest + mypy + build clean. Committed as `4e59883`. |
 | 2026-10-29 | Phase 04 page-10 built: `GET /api/activity` composes system events + role comments + live-wired submissions via swappable source adapters (no mock rows); `/activity` UI adds timeline, teammate comments, submissions sections. 7 new tests (61 total) + ruff + mypy + build green; live feed verified. Committed as `88cb2e5`. Phase 04 APPROVED (explicit instruction). Pointer at Phase 05. |
+| 2026-10-29 | Phase 05 built on `feat/05-github`: HMAC webhook + delivery dedupe + PR→task mapping, repo linking, manual PR-URL submit, Redis eval queue, `/github` page + per-ticket submit card, setup docs + delivery simulator. 11 API tests; live synthetic-delivery E2E green. Committed as `29109eb`. |
+| 2026-10-29 | Phase 06 built on `feat/06-evaluation`: SHA-pinned pipeline (idempotent, stale detection), safe static checks + secret redaction, schema-validated review with mock-label fix, Redis worker with retries, `/submissions/[id]` report. 12 API tests; real worker run green. Committed as `e402287`. |
+| 2026-10-29 | Phase 07 built on `feat/07-progression`: deterministic policy (checks approve, review only vetoes), exactly-once approval + unlock transaction, rubric-grounded competencies, template remediation with 3 hints, `/progression` page. 7 API tests (90 total); live denied→remediation→approved→unlock E2E green. Committed as `e738d99`. Phases 05–07 APPROVED (explicit instruction). Pointer at Phase 08. |
 
 ---
 
