@@ -14,6 +14,7 @@ def task_out(task: Task, key_by_id: dict[str, str]) -> TaskOut:
         rubric_json=task.rubric_json or {},
         status=task.status,
         sort_order=task.sort_order,
+        blocked_reason=task.blocked_reason,
         dependencies=[
             TaskDependencyOut(
                 depends_on_key=key_by_id.get(d.depends_on_task_id, ""),

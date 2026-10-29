@@ -18,6 +18,7 @@ type TaskDetail = {
   acceptance_criteria: { criteria?: string[] };
   status: string;
   sprint_name: string;
+  blocked_reason: string | null;
   dependencies: { depends_on_key: string }[];
 };
 type Me = { email: string };
@@ -102,6 +103,17 @@ export default function TaskPage({ params }: { params: { id: string } }) {
                 </ul>
               </CardContent>
             </Card>
+            {task.blocked_reason ? (
+              <Card className="border-warning/40">
+                <CardHeader><CardTitle>Blocked</CardTitle></CardHeader>
+                <CardContent>
+                  <p className="text-sm text-warning">{task.blocked_reason}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Flagged from a confirmed standup. Clear it by making progress or updating the standup.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : null}
             <Card>
               <CardHeader><CardTitle>Dependencies</CardTitle></CardHeader>
               <CardContent>

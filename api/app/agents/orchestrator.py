@@ -70,6 +70,11 @@ def build_context(db: Session, user: User, task_id: str | None) -> str:
         lines.append(f"Current task: {current.key} — {current.title} [{status}]")
     else:
         lines.append("Current task: none")
+    blocked = [t for t in tasks if t.blocked_reason]
+    if blocked:
+        lines.append("Open blockers: " + "; ".join(f"{t.key}: {t.blocked_reason}" for t in blocked))
+    else:
+        lines.append("Open blockers: none")
     return "\n".join(lines)
 
 

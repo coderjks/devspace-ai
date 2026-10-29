@@ -52,6 +52,7 @@ class TaskOut(BaseModel):
     rubric_json: dict
     status: TaskStatus
     sort_order: int
+    blocked_reason: str | None = None
     dependencies: list[TaskDependencyOut] = []
 
     model_config = {"from_attributes": True}
@@ -196,3 +197,34 @@ class ConversationOut(BaseModel):
     task_id: str | None
     title: str
     created_at: datetime
+
+
+class StandupProposeIn(BaseModel):
+    yesterday: str = Field(min_length=1, max_length=2000)
+    today: str = Field(min_length=1, max_length=2000)
+    blockers: str = Field(default="", max_length=2000)
+    task_id: str | None = None
+    idempotency_key: str = Field(min_length=8, max_length=64)
+
+
+class StandupOut(BaseModel):
+    id: str
+    task_id: str | None
+    task_key: str | None
+    yesterday: str
+    today: str
+    blockers: str
+    status: str
+    created_at: datetime
+
+
+class StandupProposeOut(BaseModel):
+    standup: StandupOut
+    proposed_changes: list[str] = []
+    created: bool = True
+
+
+class StandupConfirmOut(BaseModel):
+    standup: StandupOut
+    blocker_shared: bool = False
+    repeated: bool = False

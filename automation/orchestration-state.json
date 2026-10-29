@@ -1,11 +1,13 @@
 {
   "workflow": "build-screen",
   "updated": "2026-10-28",
-  "current_phase": "03",
+  "current_phase": "04",
   "current_screen": "page-09",
-  "active_screen": null,
-  "current_status": "awaiting_approval",
-  "current_workstreams": [],
+  "active_screen": "page-09",
+  "current_status": "implementing",
+  "current_workstreams": [
+    "phase-04 standup flow"
+  ],
   "completed_screens": [
     "page-01",
     "page-02",
@@ -140,7 +142,7 @@
   },
   "blockers": [],
   "approval": "none",
-  "last_checkpoint": "Phase 03 approved 2026-10-29 (mock path). Next: page-09 standups (Phase 04). Meta preflight still pending credentials.",
+  "last_checkpoint": "Phase 04 started: stacked feat/04-standups on feat/03 (needs orchestrator); building propose/confirm + tool registry + /standup + /activity",
   "screens": {
     "page-01": {
       "status": "approved",

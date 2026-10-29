@@ -142,20 +142,28 @@ export default function ChatPage({ params }: { params: { persona: string } }) {
                 </p>
               ) : null}
               <div aria-live="polite" className="space-y-3">
-                {messages.map((m) => (
-                  <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-                    <div
-                      className={cn(
-                        "max-w-[80%] whitespace-pre-wrap rounded-xl px-4 py-2.5 text-sm leading-6",
-                        m.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "border border-border bg-muted/50 text-foreground"
-                      )}
-                    >
-                      {m.content}
+                {messages.map((m) =>
+                  m.role === "system" ? (
+                    <div key={m.id} className="flex justify-center">
+                      <p className="max-w-[90%] rounded-full bg-muted px-4 py-1.5 text-center text-xs text-muted-foreground">
+                        {m.content}
+                      </p>
                     </div>
-                  </div>
-                ))}
+                  ) : (
+                    <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+                      <div
+                        className={cn(
+                          "max-w-[80%] whitespace-pre-wrap rounded-xl px-4 py-2.5 text-sm leading-6",
+                          m.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-border bg-muted/50 text-foreground"
+                        )}
+                      >
+                        {m.content}
+                      </div>
+                    </div>
+                  )
+                )}
                 {messages.length === 0 ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">
                     No messages yet — say hello to start the conversation.
