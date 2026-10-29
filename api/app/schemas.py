@@ -228,3 +228,44 @@ class StandupConfirmOut(BaseModel):
     standup: StandupOut
     blocker_shared: bool = False
     repeated: bool = False
+
+
+class SystemEventOut(BaseModel):
+    id: str
+    actor: str
+    action: str
+    object_type: str | None
+    object_id: str | None
+    created_at: datetime
+
+
+class RoleCommentOut(BaseModel):
+    id: str
+    persona: str
+    conversation_id: str
+    conversation_title: str
+    excerpt: str
+    created_at: datetime
+
+
+class SubmissionActivityItem(BaseModel):
+    id: str
+    task_id: str
+    task_key: str | None = None
+    pr_number: int | None = None
+    head_sha: str | None = None
+    status: str
+    created_at: datetime
+
+
+class SubmissionsSectionOut(BaseModel):
+    # Live wire to the submissions table. Phase 05 (GitHub App) populates it;
+    # until then items is honestly empty and the UI shows a "not yet" state.
+    source: str = "live"
+    items: list[SubmissionActivityItem] = []
+
+
+class ActivityFeedOut(BaseModel):
+    system_events: list[SystemEventOut] = []
+    role_comments: list[RoleCommentOut] = []
+    submissions: SubmissionsSectionOut = SubmissionsSectionOut()
