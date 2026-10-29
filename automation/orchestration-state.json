@@ -1,12 +1,12 @@
 {
   "workflow": "build-screen",
   "updated": "2026-10-28",
-  "current_phase": "11",
+  "current_phase": "12",
   "current_screen": "page-18",
   "active_screen": "page-18",
   "current_status": "awaiting_approval",
   "current_workstreams": [
-    "phase-11 integration and QA (not started)"
+    "phase-12 deployment and demo (not started)"
   ],
   "completed_screens": [
     "page-01",
@@ -185,11 +185,16 @@
       "insights": "PASS (check-in/retro/notifications from records, owner-scoped; 3 insights tests)",
       "ui": "PASS (/learning, tsc + build clean)",
       "approved_by": "developer, explicit instruction 2026-10-29"
+    },
+    "phase-11": {
+      "suite": "PASS (101)",
+      "journey": "PASS (29/30 live, 1 script-side miss, app correct)",
+      "report": "docs/qa-report.md"
     }
   },
   "blockers": [],
   "approval": "phases 08-10 approved 2026-10-29",
-  "last_checkpoint": "Phases 08-10 complete on feat/08-voice-infra, feat/09-voice-flows, feat/10-learning. Pointer at Phase 11 (integration & QA). Not pushed, not merged.",
+  "last_checkpoint": "Phase 11 complete on feat/11-qa (qa-report + injection test). Pointer at Phase 12. Not pushed, not merged.",
   "screens": {
     "page-01": {
       "status": "approved",
