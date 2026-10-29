@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
+import { TeammateAvatar } from "@/components/ui/teammate-avatar";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
 
 type PersonaMeta = { id: string; name: string; role: string; responsibilities: string; kind: string };
 type Message = { id: string; role: string; content: string; created_at: string };
@@ -25,37 +25,6 @@ const PERSONA_LABELS: Record<string, string> = {
 };
 
 const VOICE_PERSONAS = new Set(["tech-lead", "scrum-master"]);
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((w) => w.charAt(0))
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
-function hueFor(seed: string): number {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360;
-  return h;
-}
-
-function Avatar({ name, seed, size = "md" }: { name: string; seed: string; size?: "md" | "sm" }) {
-  const h = hueFor(seed);
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-lg font-bold text-white",
-        size === "md" ? "h-9 w-9 text-sm" : "h-7 w-7 text-xs"
-      )}
-      style={{ backgroundColor: `hsl(${h} 45% 45%)` }}
-    >
-      {initials(name)}
-    </span>
-  );
-}
 
 function formatTime(iso: string): string {
   if (!iso) return "";
@@ -173,7 +142,7 @@ export default function ChatPage({ params }: { params: { persona: string } }) {
       ) : (
         <div className="mt-4 space-y-4">
           <div className="flex items-start gap-3">
-            <Avatar name={teammateName} seed={persona} />
+            <TeammateAvatar name={teammateName} seed={persona} />
             <div className="min-w-0">
               <h1 className="flex flex-wrap items-center gap-2 text-2xl font-extrabold tracking-tight">
                 {teammateName}
@@ -229,7 +198,7 @@ export default function ChatPage({ params }: { params: { persona: string } }) {
                         </div>
                       ) : null}
                       <div className="flex gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/40">
-                        <Avatar name={mine ? youName : teammateName} seed={mine ? `you-${me?.email ?? ""}` : persona} size="sm" />
+                        <TeammateAvatar name={mine ? youName : teammateName} seed={mine ? `you-${me?.email ?? ""}` : persona} size="sm" animate={false} />
                         <div className="min-w-0 flex-1">
                           <p className="flex flex-wrap items-baseline gap-x-2">
                             <span className="text-sm font-bold">{mine ? youName : teammateName}</span>
@@ -248,7 +217,7 @@ export default function ChatPage({ params }: { params: { persona: string } }) {
                 ) : null}
                 {sending ? (
                   <div className="flex gap-3 rounded-lg px-2 py-2">
-                    <Avatar name={teammateName} seed={persona} size="sm" />
+                    <TeammateAvatar name={teammateName} seed={persona} size="sm" animate={false} />
                     <div className="flex-1">
                       <p className="flex items-baseline gap-x-2">
                         <span className="text-sm font-bold">{teammateName}</span>
