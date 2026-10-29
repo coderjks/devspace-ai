@@ -399,10 +399,15 @@ class VoiceSessionOut(BaseModel):
     created_at: datetime
 
 
+class VoiceTypedTurnIn(BaseModel):
+    text: str = Field(min_length=1, max_length=4000)
+
+
 class VoiceTurnOut(BaseModel):
     id: str
     session_id: str
     sequence: int
+    input_mode: str = "voice"
     transcript: str
     submitted_text: str | None = None
     stt_mock: bool = True

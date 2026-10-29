@@ -32,6 +32,7 @@ def upgrade() -> None:
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('session_id', sa.String(length=36), nullable=False),
     sa.Column('sequence', sa.Integer(), nullable=False),
+    sa.Column('input_mode', sa.String(length=10), nullable=False, server_default='voice'),
     sa.Column('transcript', sa.Text(), nullable=False),
     sa.Column('submitted_text', sa.Text(), nullable=True),
     sa.Column('stt_mock', sa.Boolean(), nullable=False),

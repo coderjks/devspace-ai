@@ -28,6 +28,7 @@ from app.models import User, VoiceSession, VoiceTurn
 from app.schemas import (
     VoiceSessionIn,
     VoiceSessionOut,
+    VoiceTypedTurnIn,
     VoiceSubmitIn,
     VoiceSubmitOut,
     VoiceTurnOut,
@@ -59,6 +60,7 @@ def _out_turn(t: VoiceTurn) -> VoiceTurnOut:
         id=t.id,
         session_id=t.session_id,
         sequence=t.sequence,
+        input_mode=t.input_mode,
         transcript=t.transcript,
         submitted_text=t.submitted_text,
         stt_mock=t.stt_mock,
@@ -165,6 +167,36 @@ async def upload_turn(
         transcript=transcript,
         stt_mock=is_mock,
         duration_seconds=duration,
+        audio_stored=False,
+    )
+    db.add(turn)
+    db.commit()
+    db.refresh(turn)
+    return _out_turn(turn)
+
+
+@router.post("/api/voice/sessions/{session_id}/typed-turns", response_model=VoiceTurnOut, status_code=201)
+def create_typed_turn(
+    session_id: str,
+    body: VoiceTypedTurnIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> VoiceTurnOut:
+    """Text fallback / test path: creates a turn without audio.
+
+    Labeled input_mode="typed" so transcripts are never mistaken for STT
+    output. Follows the same edit-then-submit flow as voice turns.
+    """
+    session = _owned_session(db, current_user, session_id)
+    if not session.consent:
+        raise HTTPException(status_code=403, detail="voice consent was revoked for this session")
+    sequence = db.query(VoiceTurn).filter(VoiceTurn.session_id == session.id).count()
+    turn = VoiceTurn(
+        session_id=session.id,
+        sequence=sequence,
+        input_mode="typed",
+        transcript=body.text.strip(),
+        stt_mock=False,
         audio_stored=False,
     )
     db.add(turn)

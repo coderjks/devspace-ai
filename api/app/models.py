@@ -360,6 +360,7 @@ class VoiceTurn(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     session_id: Mapped[str] = mapped_column(ForeignKey("voice_sessions.id", ondelete="CASCADE"), index=True, nullable=False)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    input_mode: Mapped[str] = mapped_column(String(10), nullable=False, default="voice")
     transcript: Mapped[str] = mapped_column(Text, nullable=False, default="")
     submitted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     stt_mock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

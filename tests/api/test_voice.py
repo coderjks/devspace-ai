@@ -138,6 +138,20 @@ def test_submit_routes_through_orchestrator_with_continuity(client):
     assert roles.count("user") >= 2 and "assistant" in roles
 
 
+def test_typed_turn_follows_same_submit_flow(client):
+    headers = _register(client, "voice-typed@test.local")
+    _enroll(client, headers)
+    sid = _session(client, headers)
+    res = client.post(f"/api/voice/sessions/{sid}/typed-turns", json={"text": "What should I do next?"}, headers=headers)
+    assert res.status_code == 201, res.text
+    turn = res.json()
+    assert turn["input_mode"] == "typed"
+    assert turn["stt_mock"] is False
+    sub = client.post(f"/api/voice/turns/{turn['id']}/submit", json={}, headers=headers)
+    assert sub.status_code == 200, sub.text
+    assert sub.json()["reply_text"]
+
+
 def test_sessions_are_owner_scoped_and_deletable(client):
     headers = _register(client, "voice-owner@test.local")
     _enroll(client, headers)
