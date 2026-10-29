@@ -176,6 +176,7 @@ class Submission(Base):
 
     task: Mapped["Task"] = relationship(back_populates="submissions")
     evaluations: Mapped[list["Evaluation"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
+    approvals: Mapped[list["Approval"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
 
 
 class Evaluation(Base):
@@ -276,6 +277,59 @@ class Repository(Base):
     user: Mapped["User"] = relationship(back_populates="repositories")
 
     __table_args__ = (UniqueConstraint("user_id", "full_name", name="uq_repository_user_full_name"),)
+
+
+class Approval(Base):
+    """Deterministic policy verdict for one submission (Phase 07).
+
+    Exactly one row per submission (unique submission_id): the policy runs
+    once, unlocks run once, and repeat requests return the stored verdict.
+    The LLM review is only ever a veto — approval rests on trusted checks.
+    """
+
+    __tablename__ = "approvals"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    submission_id: Mapped[str] = mapped_column(ForeignKey("submissions.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    evaluation_id: Mapped[str] = mapped_column(ForeignKey("evaluations.id", ondelete="SET NULL"), nullable=True)
+    decision: Mapped[str] = mapped_column(String(20), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    policy_version: Mapped[str] = mapped_column(String(50), nullable=False, default="policy-1")
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    submission: Mapped["Submission"] = relationship(back_populates="approvals")
+
+
+class Competency(Base):
+    """Per-student skill evidence from approval verdicts (Phase 07)."""
+
+    __tablename__ = "competencies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    skill: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)
+
+    __table_args__ = (UniqueConstraint("user_id", "skill", name="uq_competency_user_skill"),)
+
+
+class Remediation(Base):
+    """Targeted remediation + 3 progressive hints for a denied approval.
+
+    Hints are generated from check evidence (templates + quoted findings) —
+    guidance only, never a full solution dump.
+    """
+
+    __tablename__ = "remediations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    approval_id: Mapped[str] = mapped_column(ForeignKey("approvals.id", ondelete="CASCADE"), unique=True, nullable=False)
+    failed_checks: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
+    hints: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 
 class WebhookDelivery(Base):

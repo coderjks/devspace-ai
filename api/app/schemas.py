@@ -329,3 +329,56 @@ class EvaluateTriggerOut(BaseModel):
     status: str
     submission_id: str
     sha: str
+
+
+class ApprovalRequestIn(BaseModel):
+    idempotency_key: str = Field(min_length=8, max_length=64)
+
+
+class ApprovalOut(BaseModel):
+    id: str
+    submission_id: str
+    evaluation_id: str | None = None
+    decision: str
+    reason: str
+    policy_version: str
+    unlocked: list[str] = []
+    created: bool = True
+    created_at: datetime
+
+
+class RemediationOut(BaseModel):
+    id: str
+    approval_id: str
+    failed_checks: list[str] = []
+    hints: list[dict] = []
+    created_at: datetime
+
+
+class CompetencyOut(BaseModel):
+    skill: str
+    score: int
+    evidence_count: int
+    updated_at: datetime
+
+
+class PrereqOut(BaseModel):
+    key: str
+    title: str
+    met: bool
+
+
+class TaskEligibilityOut(BaseModel):
+    task_id: str
+    key: str
+    title: str
+    status: str
+    prerequisites: list[PrereqOut] = []
+    latest_decision: str | None = None
+    latest_reason: str | None = None
+    latest_approval_id: str | None = None
+
+
+class EligibilityOut(BaseModel):
+    tasks: list[TaskEligibilityOut] = []
+    next_recommended_key: str | None = None

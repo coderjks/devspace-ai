@@ -12,6 +12,7 @@ from app.routers import (
     github,
     health,
     progress,
+    progression,
     projects,
     roadmap,
     standups,
@@ -47,6 +48,7 @@ app.include_router(standups.router)
 app.include_router(activity.router)
 app.include_router(github.router)
 app.include_router(evaluations.router)
+app.include_router(progression.router)
 
 
 @app.get("/")
