@@ -2,8 +2,8 @@
 
 **Purpose:** Everything a new model (or engineer) needs to continue without re-deriving context. Read this first, then the sources below. If this file and the code disagree, the code and the canonical PRD win — flag the drift in [docs/progress.md](/Users/jsaxena/Documents/devspace-ai/docs/progress.md).
 
-**Last updated:** 2026-10-29, after Phase 05–07 approval.
-**Workspace:** `/Users/jsaxena/Documents/devspace-ai` · **Branch:** `feat/07-progression` (stacked on `feat/06-evaluation` ← `feat/05-github` ← `feat/04-standups`)
+**Last updated:** 2026-10-29, after Phase 08–10 approval.
+**Workspace:** `/Users/jsaxena/Documents/devspace-ai` · **Branch:** `feat/10-learning` (stacked on `feat/09-voice-flows` ← `feat/08-voice-infra` ← `feat/07-progression`)
 
 ---
 
@@ -38,11 +38,14 @@ Demo journey: `Onboard → sprint → text chat → voice standup → confirm bl
 | **Phase 05 (GitHub + PRs)** | **DONE, verified, APPROVED 2026-10-29** — `29109eb` on `feat/05-github`. Screens 11–12 approved. Real github.com delivery UNTESTED. |
 | **Phase 06 (evaluation)** | **DONE, verified, APPROVED 2026-10-29** — `e402287` on `feat/06-evaluation`. Screen 13 approved. No sandbox (static checks only, by design). |
 | **Phase 07 (approval/unlock)** | **DONE, verified, APPROVED 2026-10-29** — `e738d99` on `feat/07-progression`. Screen 14 approved. Live denied→approved→unlock E2E green. |
-| Phases 08–12 | NOT STARTED — pointer at Phase 08 (voice infrastructure, backend only) |
+| **Phase 08 (voice infra)** | **DONE, verified, APPROVED 2026-10-29** — `7fcc731` on `feat/08-voice-infra`. Mock STT/TTS, consent, continuity. Live providers UNTESTED (Q3 open). |
+| **Phase 09 (voice flows)** | **DONE, verified, APPROVED 2026-10-29** — `8ada3f5` on `feat/09-voice-flows`. Screen 16 approved. Real mic transcription UNTESTED (needs live STT). |
+| **Phase 10 (learning)** | **DONE, verified, APPROVED 2026-10-29** — `b4b6b0c` on `feat/10-learning`. Screen 17 approved. |
+| Phases 11–12 | NOT STARTED — pointer at Phase 11 (integration & QA) |
 | Git | `main` includes Phases 01–02 (merged PRs #1, #2). `feat/03-ai-orchestrator` pushed (Phase 03). All phase branches pushed 2026-10-29 (`feat/03`–`feat/07` in sync with origin). Stack not merged to `main`. `reference_images/` + `screens-library/` gitignored (never commit). Screens 01–10 APPROVED; Phases 01–04 COMPLETE (03–04 on mock LLM path). Pointer at page-11 (Phase 05 GitHub App). Live Meta preflight still pending credentials — flip via LLM_PROVIDER + key when available. Commands: `Show roadmap`, `Show current progress`, `Build next screen`, `Build page-XX`, `Resume/Validate/Approve current screen`. Do not push unless the user asks. |
 | Running servers | Local review stack was running (API :8000, web :3000, Docker Postgres/Redis) for user verification; CORS fixed to allow both `localhost:3000` and `127.0.0.1:3000` origins. Servers live only for this session (see §9 pitfall on macOS). |
 
-**Rule:** Do not start Phase 08 until the user explicitly instructs it. Each phase ends with the playbook verification prompt, a progress update, and a stop. Never implement two phases in one turn.
+**Rule:** Do not start Phase 11 until the user explicitly instructs it. Each phase ends with the playbook verification prompt, a progress update, and a stop. Never implement two phases in one turn.
 
 ## 4. What Phase 01 delivered
 

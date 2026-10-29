@@ -1,12 +1,12 @@
 {
   "workflow": "build-screen",
   "updated": "2026-10-28",
-  "current_phase": "08",
-  "current_screen": "page-16",
-  "active_screen": "page-16",
+  "current_phase": "11",
+  "current_screen": "page-18",
+  "active_screen": "page-18",
   "current_status": "awaiting_approval",
   "current_workstreams": [
-    "phase-08 voice infrastructure (not started)"
+    "phase-11 integration and QA (not started)"
   ],
   "completed_screens": [
     "page-01",
@@ -22,7 +22,9 @@
     "page-11",
     "page-12",
     "page-13",
-    "page-14"
+    "page-14",
+    "page-16",
+    "page-17"
   ],
   "approved_screens": [
     "page-01",
@@ -38,12 +40,12 @@
     "page-11",
     "page-12",
     "page-13",
-    "page-14"
+    "page-14",
+    "page-16",
+    "page-17"
   ],
   "pending_screens": [
     "page-15",
-    "page-16",
-    "page-17",
     "page-18"
   ],
   "blocked_screens": [],
@@ -173,11 +175,21 @@
       "policy": "PASS (denied->remediation, fixed->approved + exact-once unlock, 409/422/404 rules; live E2E)",
       "ui": "PASS (/progression eligibility + competencies + hints)",
       "approved_by": "developer, explicit instruction 2026-10-29"
+    },
+    "page-16": {
+      "voice": "PASS (consent, personas, audio validation, fixture STT, typed fallback, submit, continuity; 7 voice tests)",
+      "ui": "PASS (/voice conversation + guided standup, tsc + build clean; mic untested live)",
+      "approved_by": "developer, explicit instruction 2026-10-29"
+    },
+    "page-17": {
+      "insights": "PASS (check-in/retro/notifications from records, owner-scoped; 3 insights tests)",
+      "ui": "PASS (/learning, tsc + build clean)",
+      "approved_by": "developer, explicit instruction 2026-10-29"
     }
   },
   "blockers": [],
-  "approval": "phases 05-07 approved 2026-10-29",
-  "last_checkpoint": "Phases 05-07 complete on feat/05-github, feat/06-evaluation, feat/07-progression. Pointer at Phase 08 (voice infra). Not pushed, not merged.",
+  "approval": "phases 08-10 approved 2026-10-29",
+  "last_checkpoint": "Phases 08-10 complete on feat/08-voice-infra, feat/09-voice-flows, feat/10-learning. Pointer at Phase 11 (integration & QA). Not pushed, not merged.",
   "screens": {
     "page-01": {
       "status": "approved",
@@ -239,10 +251,12 @@
       "status": "pending"
     },
     "page-16": {
-      "status": "pending"
+      "status": "approved",
+      "note": "Voice standup & conversation; approved 2026-10-29"
     },
     "page-17": {
-      "status": "pending"
+      "status": "approved",
+      "note": "Learning roadmap & competencies; approved 2026-10-29"
     },
     "page-18": {
       "status": "pending"
