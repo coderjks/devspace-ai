@@ -126,7 +126,7 @@ export function ChatPanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-start gap-3 border-b border-border px-4 py-3 md:px-5">
-        <TeammateAvatar name={teammateName} seed={persona} />
+        <TeammateAvatar name={teammateName} seed={persona} size="md" />
         <div className="min-w-0 flex-1">
           <h2 className="flex flex-wrap items-center gap-2 text-lg font-extrabold tracking-tight">
             {teammateName}
