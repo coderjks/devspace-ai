@@ -384,6 +384,33 @@ class EligibilityOut(BaseModel):
     next_recommended_key: str | None = None
 
 
+class CheckInOut(BaseModel):
+    generated_at: datetime
+    summary: str
+    highlights: list[str] = []
+    next_steps: list[str] = []
+    source: str = "deterministic"
+
+
+class RetroOut(BaseModel):
+    generated_at: datetime
+    standups_confirmed: int = 0
+    submissions: int = 0
+    evaluations: int = 0
+    approvals: int = 0
+    denials: int = 0
+    open_blockers: list[str] = []
+    notes: list[str] = []
+
+
+class NotificationOut(BaseModel):
+    id: str
+    action: str
+    object_type: str | None = None
+    detail: str
+    created_at: datetime
+
+
 class VoiceSessionIn(BaseModel):
     persona: str
     language_hint: str | None = Field(default=None, max_length=20)

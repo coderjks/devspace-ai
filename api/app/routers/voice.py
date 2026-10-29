@@ -28,10 +28,10 @@ from app.models import User, VoiceSession, VoiceTurn
 from app.schemas import (
     VoiceSessionIn,
     VoiceSessionOut,
-    VoiceTypedTurnIn,
     VoiceSubmitIn,
     VoiceSubmitOut,
     VoiceTurnOut,
+    VoiceTypedTurnIn,
 )
 from app.voice.providers import VoiceProviderError, get_stt, get_tts, wav_duration_seconds
 
