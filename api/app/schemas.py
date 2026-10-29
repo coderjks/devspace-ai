@@ -168,3 +168,31 @@ class HealthOut(BaseModel):
 class DbHealthOut(BaseModel):
     status: str
     database: str
+
+
+class ChatSendRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=4000)
+    conversation_id: str | None = None
+    task_id: str | None = None
+
+
+class ChatMessageOut(BaseModel):
+    id: str
+    role: str
+    content: str
+    created_at: datetime
+
+
+class ChatReplyOut(BaseModel):
+    conversation_id: str
+    message: ChatMessageOut
+    model: str
+    mock: bool
+
+
+class ConversationOut(BaseModel):
+    id: str
+    persona: str
+    task_id: str | None
+    title: str
+    created_at: datetime
