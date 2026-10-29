@@ -3,7 +3,7 @@
 **Last updated:** 2026-10-29 (Phases 08–10 approved; trackers updated)
 **Canonical PRD:** `docs/prd/requirements.md` v2.2.1
 **Execution order:** `docs/prompts/build-playbook.md` v2.2.1
-**Gate state:** Phases 08–10 DONE, verified and APPROVED (mock STT/TTS/LLM path; live providers still need selection + credentials). Committed on `feat/08-voice-infra`, `feat/09-voice-flows`, `feat/10-learning` — stacked, not pushed, not merged. Pointer at Phase 11 (integration & QA). Do not start Phase 11 without explicit instruction.
+**Gate state:** Phase 11 DONE — full journey verified live, [qa-report](qa-report.md) written, 101 tests green. Committed on `feat/11-qa` — not pushed, not merged. Pointer at Phase 12 (deployment & demo). Do not start Phase 12 without explicit instruction.
 **Handoff:** New models/engineers start at [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md), then read this file.
 
 ---
@@ -255,6 +255,7 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-10-29 | Phase 08 built on `feat/08-voice-infra`: VoiceSession/VoiceTurn + migration, consent gate, scrum-master/tech-lead only, audio validation, fixture-only MockSTT + labeled MockTTS, fail-closed live stubs, voice→same-conversation continuity. 6 API tests. Empty-string provider env values fall back to mock (cwd-independent). Committed as `7fcc731`. |
 | 2026-10-29 | Phase 09 built on `feat/09-voice-flows`: `/voice` page (consent, push-to-talk + Type mode, editable transcript, reply + audio playback, text-chat link) + guided Scrum standup reusing propose/confirm. Typed turns labeled `input_mode=typed`. Live voice loop green. Committed as `8ada3f5`. |
 | 2026-10-29 | Phase 10 built on `feat/10-learning`: deterministic EM check-in + Scrum retro + audit-derived notifications (owner-scoped, no fabrication), `/learning` page with 12-week strip. 3 API tests (100 total); tsc + build + ruff + mypy green; live endpoint check. Committed as `b4b6b0c`. Phases 08–10 APPROVED (explicit instruction). Pointer at Phase 11. |
+| 2026-10-29 | Phase 11 on `feat/11-qa`: live full-journey E2E (29/30 checks; 1 miss was script-side, app correct), hostile-diff injection test, secrets/env audit, a11y spot-check. [qa-report.md](qa-report.md) with PASS/DEFERRED/UNTESTED. 101 pytest + ruff + mypy + tsc + build green. Deferred: rate limits, retention purge. Pointer at Phase 12. |
 
 ---
 
