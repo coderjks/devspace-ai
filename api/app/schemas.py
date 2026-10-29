@@ -308,3 +308,24 @@ class SubmissionOut(BaseModel):
     source: str
     latest_decision: str | None = None
     created_at: datetime
+
+
+class EvaluationOut(BaseModel):
+    id: str
+    submission_id: str
+    sha: str
+    test_results: dict
+    ai_review: dict
+    policy_decision: str | None = None
+    policy_reason: str | None = None
+    model_version: str | None = None
+    prompt_version: str | None = None
+    test_suite_version: str | None = None
+    policy_version: str | None = None
+    created_at: datetime
+
+
+class EvaluateTriggerOut(BaseModel):
+    status: str
+    submission_id: str
+    sha: str

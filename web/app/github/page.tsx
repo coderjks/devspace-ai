@@ -167,11 +167,11 @@ export default function GithubPage() {
                 <ul className="space-y-2">
                   {subs.map((s) => (
                     <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-                      <span>
+                      <Link href={`/submissions/${s.id}`} className="hover:underline">
                         {s.task_key ? <strong>{s.task_key}</strong> : "Ticket"}
                         {s.pr_number ? <span className="text-muted-foreground"> · PR #{s.pr_number}</span> : null}
                         {s.head_sha ? <span className="text-muted-foreground"> · {s.head_sha.slice(0, 7)}</span> : null}
-                      </span>
+                      </Link>
                       <span className="flex items-center gap-2">
                         <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">{s.status}</span>
                         {s.task_key ? (
