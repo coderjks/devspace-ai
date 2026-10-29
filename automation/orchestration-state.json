@@ -1,12 +1,12 @@
 {
   "workflow": "build-screen",
   "updated": "2026-10-28",
-  "current_phase": "04",
-  "current_screen": "page-09",
-  "active_screen": "page-09",
-  "current_status": "implementing",
+  "current_phase": "05",
+  "current_screen": "page-11",
+  "active_screen": "page-11",
+  "current_status": "awaiting_approval",
   "current_workstreams": [
-    "phase-04 standup flow"
+    "phase-05 github integration (not started)"
   ],
   "completed_screens": [
     "page-01",
@@ -16,7 +16,9 @@
     "page-05",
     "page-06",
     "page-07",
-    "page-08"
+    "page-08",
+    "page-09",
+    "page-10"
   ],
   "approved_screens": [
     "page-01",
@@ -26,14 +28,11 @@
     "page-05",
     "page-06",
     "page-07",
-    "page-08"
+    "page-08",
+    "page-09",
+    "page-10"
   ],
   "pending_screens": [
-    "page-04",
-    "page-05",
-    "page-06",
-    "page-09",
-    "page-10",
     "page-11",
     "page-12",
     "page-13",
@@ -138,11 +137,23 @@
     "page-08": {
       "route": "PASS (/team 200, 6 Chat links)",
       "note": "directory pre-existed; chat links added + covered by chat QA"
+    },
+    "page-09": {
+      "flow": "PASS (propose 201 -> idempotent re-propose 200 -> confirm persists blocker + audit + Tech Lead system message, live E2E)",
+      "backend_tests": "PASS (9 standup tests)",
+      "ui": "PASS (/standup wizard, board + task badges, sidebar links; typecheck + build clean)",
+      "approved_by": "developer, explicit instruction 2026-10-29"
+    },
+    "page-10": {
+      "feed": "PASS (system events + role comments + live-wired submissions, owner-scoped, no mock rows; live E2E)",
+      "backend_tests": "PASS (7 activity tests, 61 total)",
+      "ui": "PASS (timeline, teammate comments, submissions sections; tsc + build clean)",
+      "approved_by": "developer, explicit instruction 2026-10-29"
     }
   },
   "blockers": [],
-  "approval": "none",
-  "last_checkpoint": "Phase 04 started: stacked feat/04-standups on feat/03 (needs orchestrator); building propose/confirm + tool registry + /standup + /activity",
+  "approval": "phase-04 approved 2026-10-29",
+  "last_checkpoint": "Phases 03+04 approved. Pointer at page-11 (Phase 05 GitHub App). feat/04-standups stacked on feat/03, not pushed, not merged.",
   "screens": {
     "page-01": {
       "status": "approved",
@@ -177,10 +188,12 @@
       "note": "directory + chat links covered by chat QA; approved by developer 2026-10-29"
     },
     "page-09": {
-      "status": "pending"
+      "status": "approved",
+      "note": "Propose/confirm + Tech Lead sharing verified live; approved by developer 2026-10-29"
     },
     "page-10": {
-      "status": "pending"
+      "status": "approved",
+      "note": "Activity feed sections verified live; approved by developer 2026-10-29"
     },
     "page-11": {
       "status": "pending"
