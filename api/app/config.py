@@ -39,6 +39,15 @@ class Settings(BaseSettings):
     model_api_key: str = Field(default="", alias="MODEL_API_KEY")
     model_id: str = Field(default="", alias="MODEL_ID")
 
+    github_app_id: str = Field(default="", alias="GITHUB_APP_ID")
+    github_private_key_path: str = Field(default="", alias="GITHUB_APP_PRIVATE_KEY_PATH")
+    github_webhook_secret: str = Field(default="", alias="GITHUB_WEBHOOK_SECRET")
+    github_api_url: str = Field(default="https://api.github.com", alias="GITHUB_API_URL")
+
+    @property
+    def github_configured(self) -> bool:
+        return bool(self.github_app_id and self.github_private_key_path and self.github_webhook_secret)
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

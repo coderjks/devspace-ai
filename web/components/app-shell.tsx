@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   CalendarCheck,
+  Github,
   KanbanSquare,
   LayoutDashboard,
   Map,
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/board", label: "Board", icon: KanbanSquare },
   { href: "/standup", label: "Standup", icon: CalendarCheck },
   { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/github", label: "GitHub", icon: Github },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/team", label: "Team", icon: Users },
   { href: "/progress", label: "Progress", icon: TrendingUp },

@@ -269,3 +269,42 @@ class ActivityFeedOut(BaseModel):
     system_events: list[SystemEventOut] = []
     role_comments: list[RoleCommentOut] = []
     submissions: SubmissionsSectionOut = SubmissionsSectionOut()
+
+
+class RepoLinkIn(BaseModel):
+    full_name: str = Field(min_length=3, max_length=200)
+
+
+class RepositoryOut(BaseModel):
+    id: str
+    full_name: str
+    github_id: int | None = None
+    installation_id: int | None = None
+    link_method: str
+    created_at: datetime
+
+
+class GithubReposOut(BaseModel):
+    app_configured: bool
+    repos: list[RepositoryOut] = []
+
+
+class SubmissionCreateIn(BaseModel):
+    task_id: str
+    pr_url: str = Field(min_length=10, max_length=500)
+    head_sha: str | None = Field(default=None, min_length=7, max_length=64)
+
+
+class SubmissionOut(BaseModel):
+    id: str
+    task_id: str
+    task_key: str | None = None
+    pr_number: int | None = None
+    repository_id: str | None = None
+    head_sha: str | None = None
+    status: str
+    pr_state: str
+    merged: bool
+    source: str
+    latest_decision: str | None = None
+    created_at: datetime

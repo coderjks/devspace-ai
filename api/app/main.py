@@ -8,6 +8,7 @@ from app.routers import (
     auth,
     diagnostics,
     enrollments,
+    github,
     health,
     progress,
     projects,
@@ -43,6 +44,7 @@ app.include_router(team.router)
 app.include_router(agents.router)
 app.include_router(standups.router)
 app.include_router(activity.router)
+app.include_router(github.router)
 
 
 @app.get("/")

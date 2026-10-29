@@ -75,6 +75,7 @@ class User(Base):
     conversations: Mapped[list["AgentConversation"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     activity_events: Mapped[list["ActivityEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     standups: Mapped[list["Standup"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    repositories: Mapped[list["Repository"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Enrollment(Base):
@@ -167,6 +168,10 @@ class Submission(Base):
     repository_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     head_sha: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[SubmissionStatus] = mapped_column(Enum(SubmissionStatus), nullable=False, default=SubmissionStatus.draft)
+    pr_state: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
+    merged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="webhook")
+    last_delivery_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     task: Mapped["Task"] = relationship(back_populates="submissions")
@@ -248,3 +253,45 @@ class ActivityEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     user: Mapped["User | None"] = relationship(back_populates="activity_events")
+
+
+class Repository(Base):
+    """A student-linked GitHub repository (Phase 05).
+
+    Linked either via GitHub App installation (installation_id set) or manual
+    entry (installation_id None) until the App is installed. Webhooks only map
+    PRs from repositories linked here — unlinked repos are acknowledged and
+    ignored.
+    """
+
+    __tablename__ = "repositories"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    github_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    installation_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="repositories")
+
+    __table_args__ = (UniqueConstraint("user_id", "full_name", name="uq_repository_user_full_name"),)
+
+
+class WebhookDelivery(Base):
+    """One GitHub webhook delivery (Phase 05).
+
+    delivery_id is GitHub's X-GitHub-Delivery header — the idempotency key.
+    Re-deliveries of the same ID are acknowledged without reprocessing.
+    """
+
+    __tablename__ = "webhook_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    delivery_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    event: Mapped[str] = mapped_column(String(100), nullable=False)
+    action: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    repo_full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    processed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)

@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
@@ -28,22 +29,65 @@ function criteriaList(raw: TaskDetail["acceptance_criteria"]): string[] {
   return [];
 }
 
+type Submission = {
+  id: string;
+  task_id: string;
+  pr_number: number | null;
+  head_sha: string | null;
+  status: string;
+  pr_state: string;
+  source: string;
+};
+
 export default function TaskPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [me, setMe] = useState<Me | null>(null);
   const [task, setTask] = useState<TaskDetail | null>(null);
+  const [subs, setSubs] = useState<Submission[] | null>(null);
+  const [prUrl, setPrUrl] = useState("");
+  const [headSha, setHeadSha] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMsg, setSubmitMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [meData, taskData] = await Promise.all([api<Me>("/api/auth/me"), api<TaskDetail>(`/api/tasks/${id}`)]);
+      const [meData, taskData, subData] = await Promise.all([
+        api<Me>("/api/auth/me"),
+        api<TaskDetail>(`/api/tasks/${id}`),
+        api<Submission[]>("/api/submissions"),
+      ]);
       setMe(meData);
       setTask(taskData);
+      setSubs(subData.filter((s) => s.task_id === id));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load task");
     }
   }, [id]);
+
+  async function submitPr() {
+    setSubmitting(true);
+    setSubmitMsg(null);
+    try {
+      const created = await api<Submission>("/api/submissions", {
+        method: "POST",
+        body: JSON.stringify({
+          task_id: id,
+          pr_url: prUrl.trim(),
+          ...(headSha.trim() ? { head_sha: headSha.trim() } : {}),
+        }),
+      });
+      setSubs((prev) => (prev ? [created, ...prev] : [created]));
+      setPrUrl("");
+      setHeadSha("");
+      setSubmitMsg(`PR recorded at ${created.head_sha?.slice(0, 7) ?? "unknown SHA"} — evaluation runs in Phase 06.`);
+    } catch (e) {
+      setSubmitMsg(e instanceof Error ? e.message : "Submission failed");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   useEffect(() => {
     load();
@@ -122,6 +166,53 @@ export default function TaskPage({ params }: { params: { id: string } }) {
                 ) : (
                   <p className="text-sm text-muted-foreground">No dependencies — start here.</p>
                 )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Submit pull request</CardTitle>
+                <CardDescription>
+                  Paste the PR URL against your linked repo. Without the GitHub App, also paste the exact commit SHA from the PR.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {subs && subs.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {subs.map((s) => (
+                      <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+                        <span>
+                          {s.pr_number ? `PR #${s.pr_number}` : "PR"}
+                          {s.head_sha ? <span className="text-muted-foreground"> · {s.head_sha.slice(0, 7)}</span> : null}
+                          <span className="text-muted-foreground"> · {s.source}</span>
+                        </span>
+                        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                          {s.status}{s.pr_state === "closed" ? " · closed" : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No PRs submitted for this ticket yet.</p>
+                )}
+                <Input
+                  value={prUrl}
+                  onChange={(e) => setPrUrl(e.target.value)}
+                  placeholder="https://github.com/owner/repo/pull/123"
+                  aria-label="Pull request URL"
+                  className="w-full"
+                />
+                <Input
+                  value={headSha}
+                  onChange={(e) => setHeadSha(e.target.value)}
+                  placeholder="Exact commit SHA (required in manual mode)"
+                  aria-label="Exact commit SHA"
+                  className="w-full"
+                />
+                <div className="flex items-center gap-2">
+                  <Button onClick={submitPr} disabled={submitting || !prUrl.trim()}>Submit PR</Button>
+                  <Link href="/github" className="text-xs font-medium text-primary hover:underline">Manage repos</Link>
+                </div>
+                {submitMsg ? <p role="status" className="text-sm text-muted-foreground">{submitMsg}</p> : null}
               </CardContent>
             </Card>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
