@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,6 +43,21 @@ class Settings(BaseSettings):
     github_private_key_path: str = Field(default="", alias="GITHUB_APP_PRIVATE_KEY_PATH")
     github_webhook_secret: str = Field(default="", alias="GITHUB_WEBHOOK_SECRET")
     github_api_url: str = Field(default="https://api.github.com", alias="GITHUB_API_URL")
+
+    stt_provider: str = Field(default="mock", alias="STT_PROVIDER")
+    stt_api_key: str = Field(default="", alias="STT_API_KEY")
+    tts_provider: str = Field(default="mock", alias="TTS_PROVIDER")
+    tts_api_key: str = Field(default="", alias="TTS_API_KEY")
+    voice_max_bytes: int = Field(default=2 * 1024 * 1024, alias="VOICE_MAX_BYTES")
+    voice_max_seconds: int = Field(default=60, alias="VOICE_MAX_SECONDS")
+    voice_retention_days: int = Field(default=30, alias="VOICE_RETENTION_DAYS")
+
+    @field_validator("llm_provider", "stt_provider", "tts_provider", mode="before")
+    @classmethod
+    def _empty_provider_means_mock(cls, v: object) -> object:
+        # A present-but-empty env value (e.g. `STT_PROVIDER=` in a local .env)
+        # must behave like an unset value, not override the mock default.
+        return "mock" if v in (None, "") else v
 
     @property
     def github_configured(self) -> bool:

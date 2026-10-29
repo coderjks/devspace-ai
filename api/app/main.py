@@ -19,6 +19,7 @@ from app.routers import (
     tasks,
     team,
     users,
+    voice,
 )
 
 settings = get_settings()
@@ -49,6 +50,7 @@ app.include_router(activity.router)
 app.include_router(github.router)
 app.include_router(evaluations.router)
 app.include_router(progression.router)
+app.include_router(voice.router)
 
 
 @app.get("/")

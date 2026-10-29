@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -330,6 +331,45 @@ class Remediation(Base):
     failed_checks: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
     hints: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class VoiceSession(Base):
+    """A consented voice conversation (Phase 08).
+
+    One persona per session (Scrum Master or Tech Lead) — no group meetings.
+    Raw audio is never persisted; only transcripts and turn metadata are.
+    """
+
+    __tablename__ = "voice_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    persona: Mapped[str] = mapped_column(String(100), nullable=False)
+    consent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    language_hint: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    turns: Mapped[list["VoiceTurn"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+
+
+class VoiceTurn(Base):
+    """One push-to-talk turn: transcript in, reply out (Phase 08)."""
+
+    __tablename__ = "voice_turns"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("voice_sessions.id", ondelete="CASCADE"), index=True, nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    transcript: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    submitted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stt_mock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    reply_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tts_mock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    audio_stored: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    session: Mapped["VoiceSession"] = relationship(back_populates="turns")
 
 
 class WebhookDelivery(Base):

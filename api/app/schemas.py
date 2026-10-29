@@ -382,3 +382,44 @@ class TaskEligibilityOut(BaseModel):
 class EligibilityOut(BaseModel):
     tasks: list[TaskEligibilityOut] = []
     next_recommended_key: str | None = None
+
+
+class VoiceSessionIn(BaseModel):
+    persona: str
+    language_hint: str | None = Field(default=None, max_length=20)
+    consent: bool = False
+
+
+class VoiceSessionOut(BaseModel):
+    id: str
+    persona: str
+    consent: bool
+    language_hint: str | None = None
+    turn_count: int = 0
+    created_at: datetime
+
+
+class VoiceTurnOut(BaseModel):
+    id: str
+    session_id: str
+    sequence: int
+    transcript: str
+    submitted_text: str | None = None
+    stt_mock: bool = True
+    reply_text: str | None = None
+    tts_mock: bool = True
+    audio_stored: bool = False
+    duration_seconds: float | None = None
+    created_at: datetime
+
+
+class VoiceSubmitIn(BaseModel):
+    edited_text: str | None = Field(default=None, max_length=4000)
+
+
+class VoiceSubmitOut(BaseModel):
+    turn: VoiceTurnOut
+    reply_text: str
+    reply_mock: bool = True
+    audio_wav_base64: str | None = None
+    audio_mock: bool = True
