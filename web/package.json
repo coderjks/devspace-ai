@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@dicebear/core": "^9.4.3",
+    "@dicebear/personas": "^9.4.2",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-slot": "1.1.0",
     "class-variance-authority": "0.7.0",
