@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   Map,
   Menu,
-  TrendingUp,
   Trophy,
   Mic,
   GraduationCap,
@@ -31,13 +30,12 @@ const NAV = [
   { href: "/standup", label: "Standup", icon: CalendarCheck },
   { href: "/activity", label: "Activity", icon: Activity },
   { href: "/github", label: "GitHub", icon: Github },
-  { href: "/progression", label: "Progression", icon: Trophy },
+  { href: "/progression", label: "Growth", icon: Trophy },
   { href: "/voice", label: "Voice", icon: Mic },
   { href: "/learning", label: "Learning", icon: GraduationCap },
   { href: "/help", label: "Help", icon: CircleHelp },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/team", label: "Team", icon: Users },
-  { href: "/progress", label: "Progress", icon: TrendingUp },
   { href: "/profile", label: "Profile", icon: User },
 ];
 

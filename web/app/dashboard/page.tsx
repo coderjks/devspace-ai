@@ -147,7 +147,7 @@ export default function DashboardPage() {
         ) : (
           <p className="text-sm text-muted-foreground">
             All caught up — every task is locked, in review, or approved.{" "}
-            <Link href="/progress" className="font-medium text-primary hover:underline">View progress</Link>
+            <Link href="/progression" className="font-medium text-primary hover:underline">View growth</Link>
           </p>
         )}
       </div>
@@ -205,7 +205,7 @@ export default function DashboardPage() {
             <CardContent className="grid grid-cols-3 divide-x divide-border p-0">
               {[
                 { value: progress?.total_tasks ?? "—", label: "Tasks", href: "/board" },
-                { value: progress?.started_tasks ?? "—", label: "Active", href: "/progress" },
+                { value: progress?.started_tasks ?? "—", label: "Active", href: "/progression" },
                 { value: progress?.completed_tasks ?? "—", label: "Approved", href: "/roadmap" },
               ].map((s) => (
                 <Link key={s.label} href={s.href} className="group px-3 py-3 text-center transition-colors duration-150 hover:bg-muted/50 first:rounded-l-xl last:rounded-r-xl">
