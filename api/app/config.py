@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     github_private_key_path: str = Field(default="", alias="GITHUB_APP_PRIVATE_KEY_PATH")
     github_webhook_secret: str = Field(default="", alias="GITHUB_WEBHOOK_SECRET")
     github_api_url: str = Field(default="https://api.github.com", alias="GITHUB_API_URL")
+    github_base_repo: str = Field(default="", alias="GITHUB_BASE_REPO")
 
     stt_provider: str = Field(default="mock", alias="STT_PROVIDER")
     stt_api_key: str = Field(default="", alias="STT_API_KEY")

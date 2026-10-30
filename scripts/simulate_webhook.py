@@ -23,7 +23,8 @@ import uuid
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8000")
-    ap.add_argument("--repo", required=True)
+    ap.add_argument("--repo", required=True, help="Event repository (base repo in fork flow)")
+    ap.add_argument("--fork-head", default=None, help="Fork full_name for head.repo (fork flow)")
     ap.add_argument("--pr", type=int, required=True)
     ap.add_argument("--sha", required=True)
     ap.add_argument("--task", default="AI-001")
@@ -35,6 +36,9 @@ def main() -> int:
         print("GITHUB_WEBHOOK_SECRET is required", file=sys.stderr)
         return 2
 
+    head: dict = {"sha": args.sha, "ref": f"{args.task.lower()}-work"}
+    if args.fork_head:
+        head["repo"] = {"full_name": args.fork_head}
     payload = {
         "action": args.action,
         "number": args.pr,
@@ -45,7 +49,7 @@ def main() -> int:
             "body": "Local synthetic delivery.",
             "state": "open",
             "merged": False,
-            "head": {"sha": args.sha, "ref": f"{args.task.lower()}-work"},
+            "head": head,
             "base": {"ref": "main"},
         },
     }

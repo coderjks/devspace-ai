@@ -18,7 +18,7 @@ type Repo = {
   created_at: string;
 };
 
-type Status = { app_configured: boolean; repos: Repo[] };
+type Status = { app_configured: boolean; base_repo: string | null; repos: Repo[] };
 
 type Submission = {
   id: string;
@@ -108,9 +108,11 @@ export default function GithubPage() {
                 <Github size={16} aria-hidden /> Connection status
               </CardTitle>
               <CardDescription>
-                {status.app_configured
-                  ? "GitHub App is configured. Install it on your repository for automatic PR checks."
-                  : "Manual linking mode: the GitHub App is not installed yet, so paste your repository below and submit PRs by URL with an exact commit SHA."}
+                {status.base_repo
+                  ? `Fork ${status.base_repo}, then link your fork below. Open pull requests from your fork against the base repository.`
+                  : status.app_configured
+                    ? "GitHub App is configured. Install it on your repository for automatic PR checks."
+                    : "Manual linking mode: the GitHub App is not installed yet, so paste your repository below and submit PRs by URL with an exact commit SHA."}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -122,9 +124,20 @@ export default function GithubPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Link2 size={16} aria-hidden /> Linked repositories
+                <Link2 size={16} aria-hidden /> Linked {status.base_repo ? "fork" : "repositories"}
               </CardTitle>
-              <CardDescription>Only PRs from these repositories map to your tickets.</CardDescription>
+              <CardDescription>
+                {status.base_repo ? (
+                  <>
+                    Link <strong>your fork</strong>, not the base repo.{" "}
+                    <a href={`https://github.com/${status.base_repo}/fork`} target="_blank" rel="noreferrer" className="font-medium text-primary hover:underline">
+                      Fork {status.base_repo} on GitHub →
+                    </a>
+                  </>
+                ) : (
+                  "Only PRs from these repositories map to your tickets."
+                )}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-col gap-2 sm:flex-row">

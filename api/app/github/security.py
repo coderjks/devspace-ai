@@ -92,6 +92,28 @@ def get_installation_token(
     return data["token"], data.get("expires_at", "")
 
 
+def verify_fork(api_url: str, full_name: str, base_repo: str) -> tuple[bool, str]:
+    """Check via the public API that full_name is a fork of base_repo.
+
+    Returns (ok, note). Private repos and network failures are unverifiable,
+    never a rejection: the webhook's fork-link match remains the real gate.
+    """
+    try:
+        res = httpx.get(f"{api_url}/repos/{full_name}", headers={"Accept": "application/vnd.github+json"}, timeout=10)
+        if res.status_code == 404:
+            return True, "repository not visible publicly; accepted unverified"
+        res.raise_for_status()
+        data = res.json()
+        if not data.get("fork"):
+            return False, f"{full_name} is not a fork; fork {base_repo} first"
+        parent = ((data.get("parent") or {}).get("full_name")) or ""
+        if parent and parent.lower() != base_repo.lower():
+            return False, f"{full_name} is a fork of {parent}, not {base_repo}"
+        return True, "verified fork of the base repository"
+    except Exception:
+        return True, "could not reach GitHub; accepted unverified"
+
+
 def fetch_pr_head_sha(
     api_url: str,
     token: str,

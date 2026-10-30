@@ -19,6 +19,7 @@ def webhook_secret(monkeypatch):
         github_app_id="",
         github_private_key_path="",
         github_api_url="https://api.github.com",
+        github_base_repo="",
     )
     monkeypatch.setattr("app.routers.github.get_settings", lambda: settings)
     return settings
@@ -243,3 +244,70 @@ def test_repo_link_validation_and_scoping(client):
     # Unlink.
     assert client.delete(f"/api/github/repos/{repo['id']}", headers=headers).status_code == 204
     assert client.get("/api/submissions", headers=headers).json() == []
+
+
+BASE_REPO = "devspace-org/applied-ai-internship"
+
+
+@pytest.fixture()
+def base_repo_mode(webhook_secret, monkeypatch):
+    webhook_secret.github_base_repo = BASE_REPO
+    monkeypatch.setattr("app.routers.github.verify_fork", lambda *a: (True, "test bypass"))
+    return webhook_secret
+
+
+def _fork_payload(action, fork_full_name, number=11, sha="f" * 40, title="[AI-002] Fork work"):
+    payload = _pr_payload(action, BASE_REPO, number=number, sha=sha, title=title)
+    payload["pull_request"]["head"]["repo"] = {"full_name": fork_full_name}
+    payload["pull_request"]["head"]["ref"] = "work/student"
+    return payload
+
+
+def test_fork_pr_maps_via_linked_fork(client, webhook_secret, fake_queue, base_repo_mode):
+    headers = _register(client, "gh-fork@test.local")
+    _enroll(client, headers)
+    repo = _link(client, headers, "student/fork-repo")
+    status = client.get("/api/github/status", headers=headers).json()
+    assert status["base_repo"] == BASE_REPO
+    res = _post_webhook(client, _fork_payload("opened", repo["full_name"]))
+    assert res.status_code == 200, res.text
+    assert res.json()["status"] == "created"
+    assert len(fake_queue) == 1
+    subs = client.get("/api/submissions", headers=headers).json()
+    assert len(subs) == 1
+    assert subs[0]["task_key"] == "AI-002"
+    assert subs[0]["repository_id"] == repo["id"]
+
+
+def test_unlinked_fork_acknowledged(client, webhook_secret, fake_queue, base_repo_mode):
+    headers = _register(client, "gh-forkunknown@test.local")
+    _enroll(client, headers)
+    res = _post_webhook(client, _fork_payload("opened", "stranger/unknown-fork"))
+    assert res.json()["status"] == "unlinked_fork"
+    assert fake_queue == []
+
+
+def test_non_base_event_ignored_when_base_configured(client, webhook_secret, fake_queue, base_repo_mode):
+    headers = _register(client, "gh-forkother@test.local")
+    _enroll(client, headers)
+    repo = _link(client, headers, "student/other-repo")
+    res = _post_webhook(client, _pr_payload("opened", repo["full_name"]))
+    assert res.json()["status"] == "ignored"
+    assert fake_queue == []
+
+
+def test_linking_base_repo_itself_rejected(client, webhook_secret, base_repo_mode):
+    headers = _register(client, "gh-forkbase@test.local")
+    _enroll(client, headers)
+    res = client.post("/api/github/repos", json={"full_name": BASE_REPO}, headers=headers)
+    assert res.status_code == 422
+    assert "fork" in res.json()["detail"].lower()
+
+
+def test_linking_non_fork_rejected_when_verifiable(client, webhook_secret, monkeypatch):
+    webhook_secret.github_base_repo = BASE_REPO
+    monkeypatch.setattr("app.routers.github.verify_fork", lambda *a: (False, "not a fork; fork it first"))
+    headers = _register(client, "gh-forknonfork@test.local")
+    _enroll(client, headers)
+    res = client.post("/api/github/repos", json={"full_name": "student/not-a-fork"}, headers=headers)
+    assert res.status_code == 422

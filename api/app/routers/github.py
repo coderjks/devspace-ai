@@ -31,6 +31,7 @@ from app.github.security import (
     get_installation_token,
     parse_pr_url,
     resolve_task_key,
+    verify_fork,
     verify_signature,
 )
 from app.models import (
@@ -145,14 +146,35 @@ async def github_webhook(
         db.commit()
         return JSONResponse(status_code=200, content={"status": "ignored", "delivery": delivery})
 
-    repo = db.query(Repository).filter(Repository.full_name == repo_full_name).first() if repo_full_name else None
-    if repo is None:
-        record.processed = True
-        record.error = f"unlinked repository {repo_full_name}"
-        db.commit()
-        return JSONResponse(status_code=200, content={"status": "unlinked_repo", "delivery": delivery})
-
     pr = payload.get("pull_request") or {}
+    head_repo_full = ((pr.get("head") or {}).get("repo") or {}).get("full_name")
+    base_repo = (get_settings().github_base_repo or "").strip()
+
+    repo = None
+    if base_repo and repo_full_name and repo_full_name.lower() == base_repo.lower():
+        # Fork flow: event targets the base repo; the student is identified
+        # by their linked fork (the PR head repository).
+        if head_repo_full:
+            repo = db.query(Repository).filter(Repository.full_name == head_repo_full).first()
+        if repo is None:
+            record.processed = True
+            record.error = f"unlinked fork {head_repo_full}; student must link their fork first"
+            db.commit()
+            return JSONResponse(status_code=200, content={"status": "unlinked_fork", "delivery": delivery})
+    elif base_repo and repo_full_name:
+        record.processed = True
+        record.error = f"event for {repo_full_name}, not the configured base {base_repo}"
+        db.commit()
+        return JSONResponse(status_code=200, content={"status": "ignored", "delivery": delivery})
+    else:
+        # Legacy mode (no base configured): event repo must be a linked repo.
+        repo = db.query(Repository).filter(Repository.full_name == repo_full_name).first() if repo_full_name else None
+        if repo is None:
+            record.processed = True
+            record.error = f"unlinked repository {repo_full_name}"
+            db.commit()
+            return JSONResponse(status_code=200, content={"status": "unlinked_repo", "delivery": delivery})
+
     pr_number = pr.get("number") or payload.get("number")
     head_sha = ((pr.get("head") or {}).get("sha")) or ""
     task_key = resolve_task_key(pr.get("title"), pr.get("body"), (pr.get("head") or {}).get("ref"))
@@ -228,7 +250,9 @@ def github_status(
     settings = get_settings()
     repos = db.query(Repository).filter(Repository.user_id == current_user.id).all()
     return GithubReposOut(
-        app_configured=settings.github_configured, repos=[_repo_out(r) for r in repos]
+        app_configured=settings.github_configured,
+        base_repo=(settings.github_base_repo or "").strip() or None,
+        repos=[_repo_out(r) for r in repos],
     )
 
 
@@ -248,6 +272,17 @@ def link_repo(
     )
     if existing is not None:
         raise HTTPException(status_code=409, detail="repository already linked")
+    settings = get_settings()
+    base_repo = (settings.github_base_repo or "").strip()
+    if base_repo and full_name.lower() == base_repo.lower():
+        raise HTTPException(
+            status_code=422,
+            detail=f"Link your fork, not the base repository. Fork {base_repo} first, then link owner/your-fork.",
+        )
+    if base_repo:
+        ok, note = verify_fork(settings.github_api_url, full_name, base_repo)
+        if not ok:
+            raise HTTPException(status_code=422, detail=note)
     repo = Repository(user_id=current_user.id, full_name=full_name)
     db.add(repo)
     db.commit()

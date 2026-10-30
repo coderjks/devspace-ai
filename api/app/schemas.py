@@ -286,6 +286,7 @@ class RepositoryOut(BaseModel):
 
 class GithubReposOut(BaseModel):
     app_configured: bool
+    base_repo: str | None = None
     repos: list[RepositoryOut] = []
 
 

@@ -1,7 +1,22 @@
-# GitHub App Setup (Phase 05)
+# GitHub App Setup (Phase 05, fork flow)
 
 The webhook pipeline works without a GitHub App (manual repo linking + signed
-deliveries), but production PR automation needs one. Least-privilege setup:
+deliveries), but production PR automation needs one. Least-privilege setup.
+
+## 0. Choose the base repository and fork model
+
+- Create (or choose) ONE org base repo, e.g. `applied-ai-internship`, holding
+  all problems and starter code on `main`. Protect `main` (require pull
+  requests, no direct pushes).
+- Set `GITHUB_BASE_REPO=org/applied-ai-internship` on the API.
+- Students **fork** the base repo (one click, their own account) and link
+  their fork on the GitHub page — never the base repo itself (linking it is
+  rejected with guidance). No collaborator invites: each student has write
+  access only on their own fork, so nobody can push to another student's
+  branch. PRs from forks into base `main` fire the same webhook.
+- The server matches deliveries by base repo, then identifies the student by
+  their linked fork (`pull_request.head.repo`). Unlinked forks are
+  acknowledged with `unlinked_fork` so the student knows to link first.
 
 ## 1. Create the App
 
