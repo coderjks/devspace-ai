@@ -155,7 +155,7 @@ Legend (AGENTS.md § Engineering workflow): `LIVE` real provider verified · `MO
 
 | Integration | Phase introduced | Status | Evidence / blocker |
 |---|---|---|---|
-| Meta model runtime (LLM gateway, review/chat/hints) | API preflight, Phase 03 | **MOCK** (live UNTESTED) | Explicit mock adapter labeled in UI; Meta adapter fail-closed and unused. No credentials, base URL, or model IDs verified for this account. Do not assume endpoint/SDK. See §6 Q2. |
+| Meta model runtime (LLM gateway, review/chat/hints) | API preflight, Phase 03 | **LIVE** (model `muse-spark-1.3-contributor`, key + ID from local `api/.env`, base `https://api.meta.ai/v1`) | Live chat preflight PASSED (tech-lead reply, `mock:false`, sprint-grounded). Mock adapter retained as fallback via `LLM_PROVIDER`. Secrets gitignored, never logged. |
 | GitHub App (install, tokens, webhook) | Phase 05 | **MOCK-path live** (real github.com UNTESTED) | HMAC/dedupe/mapping verified with synthetic signed deliveries + manual mode. No App created, no installation, no webhook secret configured. See `docs/github-app-setup.md`. |
 | Isolated code runner / sandbox | Phase 06 | **Disabled by design** | Static non-executing checks only; no sandbox selected. Live execution stays off; mock review labeled advisory. |
 | Muse Spark 1.3 / Muse Wonder routing | API preflight | **UNTESTED** | Optional configurable routes per PRD §13; coding-IDE model choice is distinct from runtime routing. Never hardcode unverified IDs. |
