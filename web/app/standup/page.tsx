@@ -117,7 +117,7 @@ export default function StandupPage() {
       <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Today&apos;s standup</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         Answer the three standup questions. You will review the proposed update before anything is recorded.
-        Prefer speaking? <Link href="/voice" className="font-medium text-primary hover:underline">Do this standup by voice</Link> — same questions, same review step.
+        Prefer speaking? Tap the mic on any question to dictate it — or discuss it live in the <Link href="/voice" className="font-medium text-primary hover:underline">voice room</Link>.
       </p>
       {error ? (
         <p role="alert" className="mt-3 max-w-2xl rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">

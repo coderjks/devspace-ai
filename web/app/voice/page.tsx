@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AudioLines, ClipboardCheck, MessagesSquare, Mic, MicOff, PencilLine, Send, Square, X } from "lucide-react";
+import { AudioLines, Mic, MicOff, PencilLine, Send, Square, X } from "lucide-react";
 import { VoiceWaveform } from "@/components/voice/voice-waveform";
 import { blobToWav16k } from "@/lib/audio-to-wav";
 import { useProviderStatus } from "@/lib/provider-status";
@@ -34,16 +34,9 @@ type SubmitResult = {
   audio_mock: boolean;
 };
 
-const STANDUP_QUESTIONS = [
-  { key: "yesterday", label: "What did you complete?" },
-  { key: "today", label: "What will you work on next?" },
-  { key: "blockers", label: "Any blockers?" },
-] as const;
-
 export default function VoicePage() {
   const [me, setMe] = useState<{ email: string } | null>(null);
   const [persona, setPersona] = useState<Persona>("tech-lead");
-  const [goal, setGoal] = useState<"discuss" | "standup">("discuss");
   const [languageHint, setLanguageHint] = useState("en");
   const [consent, setConsent] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -67,17 +60,8 @@ export default function VoicePage() {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
 
-  const [answers, setAnswers] = useState<Record<string, string>>({ yesterday: "", today: "", blockers: "" });
-  const [taskId, setTaskId] = useState("");
-  const [tasks, setTasks] = useState<{ id: string; key: string; title: string }[]>([]);
-  const [proposal, setProposal] = useState<{ standup: { id: string }; proposed_changes: string[]; created: boolean } | null>(null);
-  const [standupMsg, setStandupMsg] = useState<string | null>(null);
-
   useEffect(() => {
     api<{ email: string }>("/api/auth/me").then(setMe).catch(() => {});
-    api<{ tasks: { id: string; key: string; title: string }[] }>("/api/sprints/current")
-      .then((d) => setTasks(d.tasks ?? []))
-      .catch(() => {});
   }, []);
 
   useEffect(() => () => {
@@ -220,57 +204,15 @@ export default function VoicePage() {
     }
   }
 
-  async function proposeStandup() {
-    setStandupMsg(null);
-    try {
-      const r = await api<{ standup: { id: string }; proposed_changes: string[]; created: boolean }>(
-        "/api/standups/propose",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            yesterday: answers.yesterday,
-            today: answers.today,
-            blockers: answers.blockers,
-            task_id: taskId || null,
-            idempotency_key: crypto.randomUUID().replace(/-/g, ""),
-          }),
-        }
-      );
-      setProposal(r);
-    } catch (e) {
-      setStandupMsg(e instanceof Error ? e.message : "Propose failed");
-    }
-  }
-
-  async function confirmStandup() {
-    if (!proposal) return;
-    try {
-      await api(`/api/standups/${proposal.standup.id}/confirm`, { method: "POST" });
-      setStandupMsg("Standup confirmed — blockers shared with the Tech Lead. State changed only on your confirm.");
-      setProposal(null);
-    } catch (e) {
-      setStandupMsg(e instanceof Error ? e.message : "Confirm failed");
-    }
-  }
-
   return (
     <AppShell email={me?.email}>
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Voice standup & conversation</p>
-      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Voice</h1>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Talk it out</p>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Voice conversation</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Speak with the Scrum Master or Tech Lead, edit the transcript, then submit. Voice never changes sprint state
-        by itself — confirmations stay explicit. Prefer typing? Use Type mode or continue in text chat.
+        Talk through anything with the Scrum Master or Tech Lead — blockers, design doubts, plan reviews.
+        The daily standup ritual lives on the <Link href="/standup" className="font-medium text-primary hover:underline">standup page</Link> (with per-question dictation);
+        this room is for free discussion. Transcripts stay editable and nothing is recorded until you submit.
       </p>
-      <div className="mt-4 flex w-fit items-center gap-1 rounded-lg border border-border bg-muted/40 p-1" role="group" aria-label="Voice goal">
-        <Button size="sm" variant={goal === "discuss" ? "secondary" : "ghost"} aria-pressed={goal === "discuss"} onClick={() => setGoal("discuss")}>
-          <MessagesSquare size={14} aria-hidden className="mr-1.5" />
-          Free discussion
-        </Button>
-        <Button size="sm" variant={goal === "standup" ? "secondary" : "ghost"} aria-pressed={goal === "standup"} onClick={() => { setGoal("standup"); setPersona("scrum-master"); setSessionId(null); }}>
-          <ClipboardCheck size={14} aria-hidden className="mr-1.5" />
-          Guided standup
-        </Button>
-      </div>
 
       <div className="mt-6 space-y-4">
         <Card>
@@ -281,7 +223,7 @@ export default function VoicePage() {
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2" role="tablist" aria-label="Persona">
               {(["tech-lead", "scrum-master"] as Persona[]).map((p) => (
-                <Button key={p} variant={persona === p ? "default" : "outline"} size="sm" disabled={goal === "standup"} title={goal === "standup" ? "Guided standup always uses the Scrum Master" : undefined} onClick={() => { setPersona(p); setSessionId(null); }}>
+                <Button key={p} variant={persona === p ? "default" : "outline"} size="sm" onClick={() => { setPersona(p); setSessionId(null); }}>
                   {p === "tech-lead" ? "Tech Lead" : "Scrum Master"}
                 </Button>
               ))}
@@ -302,11 +244,9 @@ export default function VoicePage() {
             ) : (
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm text-muted-foreground">Session active — record or type below.</p>
-                {goal === "discuss" ? (
-                  <Button variant="default" size="sm" onClick={() => setOverlay(true)} disabled={sttReady === false} title={sttReady === false ? STT_UNAVAILABLE_MSG : undefined}>
-                    <AudioLines size={15} aria-hidden /> Conversation mode
-                  </Button>
-                ) : null}
+                <Button variant="default" size="sm" onClick={() => setOverlay(true)} disabled={sttReady === false} title={sttReady === false ? STT_UNAVAILABLE_MSG : undefined}>
+                  <AudioLines size={15} aria-hidden /> Conversation mode
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => setSessionId(null)}>End</Button>
               </div>
             )}
@@ -385,52 +325,6 @@ export default function VoicePage() {
               </CardContent>
             </Card>
 
-            {goal === "standup" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Guided standup</CardTitle>
-                  <CardDescription>
-                    Answer the three standup questions (speak above or type here), then review and confirm.
-                    Nothing is recorded until you confirm.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {STANDUP_QUESTIONS.map((q) => (
-                    <div key={q.key} className="space-y-1">
-                      <label htmlFor={`voice-${q.key}`} className="text-sm font-medium">{q.label}</label>
-                      <textarea id={`voice-${q.key}`} value={answers[q.key]} onChange={(e) => setAnswers({ ...answers, [q.key]: e.target.value })} rows={2} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                    </div>
-                  ))}
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <select value={taskId} onChange={(e) => setTaskId(e.target.value)} aria-label="Related ticket" className="rounded-md border border-input bg-background px-2 py-2 text-sm">
-                      <option value="">No specific ticket</option>
-                      {tasks.map((t) => <option key={t.id} value={t.id}>{t.key} — {t.title}</option>)}
-                    </select>
-                    <Button onClick={proposeStandup} disabled={!answers.yesterday.trim() || !answers.today.trim()}>Review proposed changes</Button>
-                  </div>
-                  {proposal ? (
-                    <div className="space-y-2 rounded-lg border border-primary/30 p-3">
-                      <p className="text-sm font-medium">Proposed changes:</p>
-                      <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                        {proposal.proposed_changes.map((c) => <li key={c}>{c}</li>)}
-                      </ul>
-                      <Button onClick={confirmStandup}>Confirm standup</Button>
-                    </div>
-                  ) : null}
-                  {standupMsg ? <p role="status" className="text-sm text-muted-foreground">{standupMsg}</p> : null}
-                </CardContent>
-              </Card>
-            ) : persona === "tech-lead" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Tip</CardTitle>
-                  <CardDescription>
-                    Switch to Guided standup above for the yesterday/today/blockers flow with the Scrum Master.
-                    Confirmed blockers are shared with the Tech Lead automatically.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            ) : null}
           </>
         ) : (
           !me ? <Skeleton className="h-32 w-full rounded-xl" /> : (
