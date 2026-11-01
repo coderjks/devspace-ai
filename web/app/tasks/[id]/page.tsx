@@ -38,6 +38,8 @@ type Submission = {
   pr_state: string;
   source: string;
 };
+type LinkedRepo = { id: string; full_name: string };
+type OpenPull = { number: number; title: string; head_sha: string; html_url: string };
 
 export default function TaskPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -47,24 +49,55 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   const [prUrl, setPrUrl] = useState("");
   const [headSha, setHeadSha] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [repos, setRepos] = useState<LinkedRepo[] | null>(null);
+  const [repoId, setRepoId] = useState<string | null>(null);
+  const [pulls, setPulls] = useState<OpenPull[] | null>(null);
+  const [pullsError, setPullsError] = useState<string | null>(null);
+  const [selectedPull, setSelectedPull] = useState<number | null>(null);
   const [submitMsg, setSubmitMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [meData, taskData, subData] = await Promise.all([
+      const [meData, taskData, subData, ghData] = await Promise.all([
         api<Me>("/api/auth/me"),
         api<TaskDetail>(`/api/tasks/${id}`),
         api<Submission[]>("/api/submissions"),
+        api<{ repos: LinkedRepo[] }>("/api/github/status").catch(() => ({ repos: [] })),
       ]);
       setMe(meData);
       setTask(taskData);
       setSubs(subData.filter((s) => s.task_id === id));
+      setRepos(ghData.repos);
+      setRepoId((prev) => prev ?? ghData.repos[0]?.id ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load task");
     }
   }, [id]);
+
+  const loadPulls = useCallback(async (rid: string) => {
+    setPulls(null);
+    setPullsError(null);
+    try {
+      const list = await api<OpenPull[]>(`/api/github/repos/${rid}/pulls`);
+      setPulls(list);
+    } catch (e) {
+      setPullsError(e instanceof Error ? e.message : "Could not list pull requests");
+      setPulls([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (repoId) loadPulls(repoId);
+  }, [repoId, loadPulls]);
+
+  function pickPull(p: OpenPull) {
+    setSelectedPull(p.number);
+    setPrUrl(p.html_url);
+    setHeadSha(p.head_sha);
+    setSubmitMsg(null);
+  }
 
   async function submitPr() {
     setSubmitting(true);
@@ -81,7 +114,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
       setSubs((prev) => (prev ? [created, ...prev] : [created]));
       setPrUrl("");
       setHeadSha("");
-      setSubmitMsg(`PR recorded at ${created.head_sha?.slice(0, 7) ?? "unknown SHA"} — evaluation runs in Phase 06.`);
+      setSubmitMsg(`PR recorded at ${created.head_sha?.slice(0, 7) ?? "unknown SHA"} — automated checks and review are running.`);
     } catch (e) {
       setSubmitMsg(e instanceof Error ? e.message : "Submission failed");
     } finally {
@@ -172,7 +205,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
               <CardHeader>
                 <CardTitle>Submit pull request</CardTitle>
                 <CardDescription>
-                  Paste the PR URL against your linked repo. Without the GitHub App, also paste the exact commit SHA from the PR.
+                  Pick one of your fork&apos;s open PRs — the URL and commit SHA fill in automatically.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -194,20 +227,95 @@ export default function TaskPage({ params }: { params: { id: string } }) {
                 ) : (
                   <p className="text-sm text-muted-foreground">No PRs submitted for this ticket yet.</p>
                 )}
-                <Input
-                  value={prUrl}
-                  onChange={(e) => setPrUrl(e.target.value)}
-                  placeholder="https://github.com/owner/repo/pull/123"
-                  aria-label="Pull request URL"
-                  className="w-full"
-                />
-                <Input
-                  value={headSha}
-                  onChange={(e) => setHeadSha(e.target.value)}
-                  placeholder="Exact commit SHA (required in manual mode)"
-                  aria-label="Exact commit SHA"
-                  className="w-full"
-                />
+                {(repos ?? []).length > 1 ? (
+                  <div className="space-y-1">
+                    <label htmlFor="pr-repo" className="text-xs font-medium text-muted-foreground">Fork</label>
+                    <select
+                      id="pr-repo"
+                      value={repoId ?? ""}
+                      onChange={(e) => {
+                        setRepoId(e.target.value);
+                        setSelectedPull(null);
+                      }}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {(repos ?? []).map((r) => (
+                        <option key={r.id} value={r.id}>{r.full_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+                {repoId ? (
+                  pulls === null ? (
+                    <Skeleton className="h-14 w-full rounded-xl" />
+                  ) : pullsError ? (
+                    <p role="alert" className="text-sm text-destructive">
+                      {pullsError} — you can still paste a PR URL manually below.
+                    </p>
+                  ) : pulls.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No open PRs on this fork. Open one on GitHub first, or paste a URL manually below.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1.5" aria-label="Open pull requests on your fork">
+                      {pulls.map((p) => {
+                        const active = selectedPull === p.number;
+                        return (
+                          <li key={p.number}>
+                            <button
+                              type="button"
+                              onClick={() => pickPull(p)}
+                              aria-pressed={active}
+                              className={`flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors duration-150 ${
+                                active
+                                  ? "border-primary/60 bg-primary/[0.06]"
+                                  : "border-border hover:bg-muted/50"
+                              }`}
+                            >
+                              <span className="font-medium">
+                                #{p.number} — <span className="font-normal">{p.title}</span>
+                              </span>
+                              <span className="rounded-full bg-muted px-2.5 py-1 font-mono text-xs tabular-nums text-muted-foreground">
+                                {p.head_sha.slice(0, 7)}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No fork linked yet — <Link href="/github" className="font-medium text-primary hover:underline">link your fork</Link>, then pick its PR here.
+                  </p>
+                )}
+                <details className="rounded-lg border border-border px-3 py-2">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+                    Or paste a PR manually
+                  </summary>
+                  <div className="space-y-2 pt-2">
+                    <Input
+                      value={prUrl}
+                      onChange={(e) => {
+                        setPrUrl(e.target.value);
+                        setSelectedPull(null);
+                      }}
+                      placeholder="https://github.com/owner/repo/pull/123"
+                      aria-label="Pull request URL"
+                      className="w-full"
+                    />
+                    <Input
+                      value={headSha}
+                      onChange={(e) => {
+                        setHeadSha(e.target.value);
+                        setSelectedPull(null);
+                      }}
+                      placeholder="Exact commit SHA (required in manual mode)"
+                      aria-label="Exact commit SHA"
+                      className="w-full font-mono"
+                    />
+                  </div>
+                </details>
                 <div className="flex items-center gap-2">
                   <Button onClick={submitPr} disabled={submitting || !prUrl.trim()}>Submit PR</Button>
                   <Link href="/github" className="text-xs font-medium text-primary hover:underline">Manage repos</Link>

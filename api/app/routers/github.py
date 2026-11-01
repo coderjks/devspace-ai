@@ -46,6 +46,7 @@ from app.models import (
 from app.queue import enqueue_evaluation, get_redis
 from app.schemas import (
     GithubReposOut,
+    OpenPullRequest,
     RepoLinkIn,
     RepositoryOut,
     SubmissionCreateIn,
@@ -288,6 +289,61 @@ def link_repo(
     db.commit()
     db.refresh(repo)
     return _repo_out(repo)
+
+
+def fetch_open_pulls(api_url: str, full_name: str) -> list[dict]:
+    """List open PRs of a public repo via the GitHub REST API (no auth).
+
+    Raises RuntimeError with a human message on any failure; the route
+    converts it to a 502. Monkeypatch this in tests — never hit the network.
+    """
+    import httpx
+
+    try:
+        res = httpx.get(
+            f"{api_url.rstrip('/')}/repos/{full_name}/pulls",
+            params={"state": "open", "per_page": 20},
+            headers={"Accept": "application/vnd.github+json"},
+            timeout=15,
+        )
+        res.raise_for_status()
+        pulls = res.json()
+    except Exception as exc:
+        raise RuntimeError(f"Could not list pull requests for {full_name}. Is the fork public?") from exc
+    out = []
+    for pr in pulls if isinstance(pulls, list) else []:
+        head = pr.get("head") or {}
+        if isinstance(pr.get("number"), int) and head.get("sha"):
+            out.append(
+                {
+                    "number": pr["number"],
+                    "title": pr.get("title") or f"PR #{pr['number']}",
+                    "head_sha": head["sha"],
+                    "html_url": pr.get("html_url") or "",
+                }
+            )
+    return out
+
+
+@router.get("/api/github/repos/{repo_id}/pulls", response_model=list[OpenPullRequest])
+def list_open_pulls(
+    repo_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[OpenPullRequest]:
+    repo = (
+        db.query(Repository)
+        .filter(Repository.id == repo_id, Repository.user_id == current_user.id)
+        .first()
+    )
+    if repo is None:
+        raise HTTPException(status_code=404, detail="repository not found")
+    settings = get_settings()
+    try:
+        pulls = fetch_open_pulls(settings.github_api_url, repo.full_name)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return [OpenPullRequest.model_validate(p) for p in pulls]
 
 
 @router.delete("/api/github/repos/{repo_id}", status_code=204)

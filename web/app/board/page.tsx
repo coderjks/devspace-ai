@@ -222,10 +222,12 @@ export default function BoardPage() {
               const total = (sprint?.tasks ?? []).filter((t) => t.status === col.status).length;
               const droppable = canDropOn(col.status);
               const isTarget = droppable && dropTarget === col.status;
+              const dimmed = draggingId !== null && !droppable;
               return (
                 <section
                   key={col.status}
                   aria-label={`${col.title} column`}
+                  aria-disabled={dimmed || undefined}
                   onDragOver={(e) => {
                     if (canDropOn(col.status)) {
                       e.preventDefault();
@@ -243,12 +245,14 @@ export default function BoardPage() {
                       transition(id, col.status);
                     }
                   }}
-                  className={`rounded-2xl border p-3 transition-colors duration-150 ${
+                  className={`rounded-2xl border p-3 transition-all duration-150 ${
                     isTarget
                       ? "border-primary/60 bg-primary/[0.07]"
                       : droppable
                         ? "border-dashed border-primary/30 bg-muted/40"
-                        : "border-border bg-muted/40"
+                        : dimmed
+                          ? "border-border bg-muted/40 opacity-50 saturate-50"
+                          : "border-border bg-muted/40"
                   }`}
                 >
                   <h2 className="flex items-center justify-between px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -295,11 +299,14 @@ export default function BoardPage() {
                           );
                         })}
                     {!loading && tasks.length === 0 ? (
-                      total === 0 ? (
-                        <EmptyState icon={Inbox} title="No tasks here" hint="Tasks appear as evaluations unlock them." />
-                      ) : (
-                        <EmptyState icon={SearchX} title="No matching tasks" hint="No tasks in this column match your search." />
-                      )
+                      <div
+                        aria-hidden
+                        className={`flex min-h-20 items-center justify-center rounded-xl border border-dashed px-2 py-4 text-center text-xs text-muted-foreground ${
+                          droppable ? "border-primary/40 bg-primary/[0.04]" : "border-border"
+                        }`}
+                      >
+                        {droppable ? "Drop here" : total === 0 ? "Empty" : "No match"}
+                      </div>
                     ) : null}
                   </div>
                 </section>

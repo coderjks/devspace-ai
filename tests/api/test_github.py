@@ -311,3 +311,36 @@ def test_linking_non_fork_rejected_when_verifiable(client, webhook_secret, monke
     _enroll(client, headers)
     res = client.post("/api/github/repos", json={"full_name": "student/not-a-fork"}, headers=headers)
     assert res.status_code == 422
+
+
+def test_list_open_pulls_uses_linked_repo(client, webhook_secret, monkeypatch):
+    headers = _register(client, "gh-pulls@test.local")
+    _enroll(client, headers)
+    repo = _link(client, headers, "student/internship")
+    monkeypatch.setattr(
+        "app.routers.github.fetch_open_pulls",
+        lambda api_url, full_name: [
+            {"number": 7, "title": "AI-002: add endpoint", "head_sha": "abc123" + "0" * 34, "html_url": "https://github.com/student/internship/pull/7"},
+            {"number": 8, "title": "WIP", "head_sha": "def456" + "0" * 34, "html_url": "https://github.com/student/internship/pull/8"},
+        ],
+    )
+    res = client.get(f"/api/github/repos/{repo['id']}/pulls", headers=headers)
+    assert res.status_code == 200, res.text
+    pulls = res.json()
+    assert [p["number"] for p in pulls] == [7, 8]
+    assert pulls[0]["head_sha"].startswith("abc123")
+
+
+def test_list_open_pulls_rejects_foreign_repo_and_reports_github_failure(client, webhook_secret, monkeypatch):
+    headers = _register(client, "gh-pulls2@test.local")
+    _enroll(client, headers)
+    assert client.get("/api/github/repos/does-not-exist/pulls", headers=headers).status_code == 404
+    repo = _link(client, headers, "student/internship")
+
+    def boom(api_url, full_name):
+        raise RuntimeError("Could not list pull requests for student/internship. Is the fork public?")
+
+    monkeypatch.setattr("app.routers.github.fetch_open_pulls", boom)
+    res = client.get(f"/api/github/repos/{repo['id']}/pulls", headers=headers)
+    assert res.status_code == 502
+    assert "public" in res.json()["detail"]

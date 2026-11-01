@@ -299,6 +299,13 @@ class GithubReposOut(BaseModel):
     repos: list[RepositoryOut] = []
 
 
+class OpenPullRequest(BaseModel):
+    number: int
+    title: str
+    head_sha: str
+    html_url: str
+
+
 class SubmissionCreateIn(BaseModel):
     task_id: str
     pr_url: str = Field(min_length=10, max_length=500)
