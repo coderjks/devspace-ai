@@ -108,6 +108,12 @@ class PasswordChange(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class ProviderStatusOut(BaseModel):
+    provider: str
+    mock: bool
+    model: str
+
+
 class EnrollmentSkillUpdate(BaseModel):
     skill_level: str = Field(min_length=1, max_length=50)
 

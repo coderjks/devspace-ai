@@ -21,6 +21,7 @@ from app.schemas import (
     ChatReplyOut,
     ChatSendRequest,
     ConversationOut,
+    ProviderStatusOut,
 )
 
 router = APIRouter(tags=["agents"])
@@ -32,6 +33,19 @@ def _provider():
         return get_provider(settings.llm_provider, settings), settings
     except ProviderError as exc:
         raise HTTPException(status_code=502, detail="model provider unavailable") from exc
+
+
+@router.get("/api/agents/provider", response_model=ProviderStatusOut)
+def provider_status(
+    current_user: User = Depends(get_current_user),
+) -> ProviderStatusOut:
+    _, settings = _provider()
+    live = settings.llm_provider == "meta"
+    return ProviderStatusOut(
+        provider=settings.llm_provider,
+        mock=not live,
+        model=settings.model_id if live else "mock-teammate-v1",
+    )
 
 
 @router.post("/api/agents/{persona}/messages", response_model=ChatReplyOut)

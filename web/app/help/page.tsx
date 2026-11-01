@@ -29,7 +29,7 @@ export default function HelpPage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Resources</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Help & setup</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Help & setup</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         New here and never touched Git? Start at Step 1 and work down — by Step 4
         you&apos;ll have your sprint repo and know how to submit work.

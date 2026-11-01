@@ -58,7 +58,7 @@ export default function LearningPage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Learning roadmap & competencies</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Learning</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Learning</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         Everything here is derived from your actual records — approvals, evaluations, standups. Nothing is
         self-reported or fabricated.

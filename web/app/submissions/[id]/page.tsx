@@ -59,7 +59,7 @@ export default function SubmissionPage({ params }: { params: { id: string } }) {
         <ArrowLeft size={15} aria-hidden /> Back to GitHub
       </Link>
       <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">PR evaluation</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Review report</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Review report</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         Results are tied to an exact commit SHA. A language-model review alone never approves a ticket — the
         deterministic policy in Phase 07 decides.

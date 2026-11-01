@@ -144,7 +144,7 @@ export default function BoardPage() {
   return (
     <AppShell email={me?.email}>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Sprint 1 · Applied AI Engineering</p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{sprint?.name ?? "Sprint board"}</h1>
+        <h1 className="mt-1 text-2xl font-extrabold tracking-tight">{sprint?.name ?? "Sprint board"}</h1>
         <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
           Drag cards between To Do and In Progress. Every move is validated by the backend —
           locked, review, and approved columns are set by evaluations, never by hand.

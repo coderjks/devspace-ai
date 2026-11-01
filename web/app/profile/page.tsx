@@ -123,7 +123,7 @@ export default function ProfilePage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Account</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Profile</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Profile</h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
         Your identity across the internship. Your name appears to your teammates.
       </p>

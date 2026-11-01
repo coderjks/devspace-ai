@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { logout } from "@/lib/api";
+import { api, logout } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -101,6 +101,35 @@ function SidebarContent({ email, onNavigate }: { email?: string; onNavigate?: ()
   );
 }
 
+function ProviderDot() {
+  const [mock, setMock] = useState<boolean | null>(null);
+  const [model, setModel] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    api<{ mock: boolean; model: string }>("/api/agents/provider")
+      .then((s) => {
+        if (!cancelled) {
+          setMock(s.mock);
+          setModel(s.model);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMock(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  if (mock === null) return null;
+  return (
+    <span
+      title={mock ? "Mock teammate replies (no live model)" : `Live model: ${model}`}
+      aria-label={mock ? "Mock model mode" : `Live model ${model}`}
+      className={`inline-block h-2 w-2 rounded-full ${mock ? "bg-amber-500" : "bg-emerald-500"}`}
+    />
+  );
+}
+
 export function AppShell({ email, children }: { email?: string; children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerId = useId();
@@ -176,6 +205,9 @@ export function AppShell({ email, children }: { email?: string; children: React.
                   {email}
                 </span>
               ) : null}
+              <span className="flex items-center px-1">
+                <ProviderDot />
+              </span>
               <ThemeToggle />
               <Button variant="outline" size="sm" onClick={logout}>
                 Log out

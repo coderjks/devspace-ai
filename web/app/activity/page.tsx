@@ -63,6 +63,42 @@ function personaLabel(persona: string): string {
   return persona.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "Unknown date";
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+}
+
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+/** Best-effort human sentence for a raw system event. Unknown actions fall
+ * back to a prettified action name rather than raw `snake.case` internals. */
+function describeEvent(e: SystemEvent): string {
+  const actor = e.actor ?? "";
+  if (e.action === "agent_reply" && actor.startsWith("agent:")) {
+    return `${personaLabel(actor.slice("agent:".length))} replied in chat`;
+  }
+  const sentences: Record<string, string> = {
+    "enrollment.created": "You enrolled in the internship",
+    "standup.proposed": "You drafted a standup",
+    "standup.confirmed": "You confirmed a standup",
+    "task.transition": e.object_id ? `Task ${e.object_id} changed status` : "A task changed status",
+    "password.changed": "You changed your password",
+    "enrollment.skill_updated": "You updated your skill level",
+    "evaluation.completed": "An evaluation finished",
+    "submission.created": "You submitted a pull request",
+  };
+  return sentences[e.action] ?? e.action.replace(/[._]/g, " ");
+}
+
 export default function ActivityPage() {
   const [me, setMe] = useState<{ email: string } | null>(null);
   const [standups, setStandups] = useState<Standup[] | null>(null);
@@ -84,7 +120,7 @@ export default function ActivityPage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Sprint activity & blockers</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Activity</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Activity</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         Your confirmed standups and flagged blockers. Write today&apos;s standup to add a new entry.
       </p>
@@ -132,17 +168,31 @@ export default function ActivityPage() {
                 <CardDescription>Real system events from your sprint: enrollments, task moves, standups.</CardDescription>
               </CardHeader>
               <CardContent>
-                <ol className="space-y-2">
-                  {feed.system_events.slice(0, 20).map((e) => (
-                    <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-                      <span>
-                        <strong className="font-medium">{e.action}</strong>
-                        <span className="text-muted-foreground"> · {e.actor}</span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">{formatWhen(e.created_at)}</span>
-                    </li>
-                  ))}
-                </ol>
+                {(() => {
+                  const groups = new Map<string, SystemEvent[]>();
+                  for (const e of feed.system_events.slice(0, 20)) {
+                    const day = dayLabel(e.created_at);
+                    if (!groups.has(day)) groups.set(day, []);
+                    groups.get(day)!.push(e);
+                  }
+                  return (
+                    <div className="space-y-4">
+                      {[...groups].map(([day, events]) => (
+                        <div key={day}>
+                          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{day}</p>
+                          <ol className="space-y-1.5">
+                            {events.map((e) => (
+                              <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+                                <span className="font-medium">{describeEvent(e)}</span>
+                                <span className="text-xs tabular-nums text-muted-foreground">{formatTime(e.created_at)}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           ) : null}
@@ -185,8 +235,8 @@ export default function ActivityPage() {
               <CardContent>
                 {feed.submissions.items.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No submissions yet. Connect a repository and open a pull request in Phase 05 (GitHub Integration)
-                    and it will appear here automatically — this section is already wired to live data.
+                    No submissions yet. <Link href="/github" className="font-medium text-primary hover:underline">Connect your fork</Link> and
+                    submit a PR from a ticket — it appears here automatically.
                   </p>
                 ) : (
                   <ul className="space-y-2">

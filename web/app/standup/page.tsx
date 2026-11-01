@@ -29,6 +29,7 @@ function newKey() {
 }
 
 const STEPS = ["Yesterday", "Today", "Blockers"] as const;
+const PHASES = ["Write", "Review", "Done"] as const;
 
 export default function StandupPage() {
   const [me, setMe] = useState<{ email: string } | null>(null);
@@ -98,13 +99,15 @@ export default function StandupPage() {
     }
   }
 
+  const phase = done ? 3 : proposal ? 2 : 1;
+
   return (
     <AppShell email={me?.email}>
       <Button variant="ghost" size="sm" asChild>
         <Link href="/dashboard"><ArrowLeft size={15} aria-hidden /> Back to dashboard</Link>
       </Button>
       <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Daily standup · text</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Today&apos;s standup</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Today&apos;s standup</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         Answer the three standup questions. You will review the proposed update before anything is recorded.
         Prefer speaking? <Link href="/voice" className="font-medium text-primary hover:underline">Do this standup by voice</Link> — same questions, same review step.
@@ -120,7 +123,30 @@ export default function StandupPage() {
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-40 w-full rounded-xl" />
         </div>
-      ) : done ? (
+      ) : (
+        <>
+          <ol aria-label="Standup progress" className="mt-4 flex max-w-2xl items-center gap-1.5">
+            {PHASES.map((label, i) => {
+              const n = i + 1;
+              const reached = n <= phase;
+              const current = n === phase;
+              return (
+                <li key={label} className="flex flex-1 items-center gap-1.5 last:flex-none" aria-current={current ? "step" : undefined}>
+                  <span
+                    aria-hidden
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      reached ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {n < phase ? "✓" : n}
+                  </span>
+                  <span className={`text-xs font-medium ${reached ? "text-foreground" : "text-muted-foreground"}`}>{label}</span>
+                  {n < PHASES.length ? <span aria-hidden className="mx-1 h-px flex-1 bg-border" /> : null}
+                </li>
+              );
+            })}
+          </ol>
+          {done ? (
         <Card className="mt-4 max-w-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -135,6 +161,7 @@ export default function StandupPage() {
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild><Link href="/activity">View activity <ArrowRight size={16} aria-hidden /></Link></Button>
             <Button variant="outline" asChild><Link href="/board">Open board</Link></Button>
+            <Button variant="outline" asChild><Link href="/voice">Discuss by voice</Link></Button>
           </CardContent>
         </Card>
       ) : proposal ? (
@@ -209,6 +236,8 @@ export default function StandupPage() {
             </form>
           </CardContent>
         </Card>
+          )}
+        </>
       )}
     </AppShell>
   );

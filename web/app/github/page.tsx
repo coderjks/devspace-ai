@@ -89,7 +89,7 @@ export default function GithubPage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Repository access</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">GitHub Connection</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">GitHub Connection</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         Link your internship repository so pull requests map to sprint tickets. No fake OAuth — linking is explicit
         and revocation is immediate.

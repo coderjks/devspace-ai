@@ -49,7 +49,11 @@ export function SignInForm() {
       setDone(true);
       router.push("/dashboard");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Sign in failed.");
+      if (err instanceof TypeError) {
+        setFormError("Can't reach the server. Is the API running? See Help for setup steps.");
+      } else {
+        setFormError(err instanceof Error ? err.message : "Sign in failed.");
+      }
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Mic, MicOff, PencilLine, Send, Square } from "lucide-react";
+import { ClipboardCheck, MessagesSquare, Mic, MicOff, PencilLine, Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -39,6 +39,7 @@ const STANDUP_QUESTIONS = [
 export default function VoicePage() {
   const [me, setMe] = useState<{ email: string } | null>(null);
   const [persona, setPersona] = useState<Persona>("tech-lead");
+  const [goal, setGoal] = useState<"discuss" | "standup">("discuss");
   const [languageHint, setLanguageHint] = useState("en");
   const [consent, setConsent] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -225,11 +226,21 @@ export default function VoicePage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Voice standup & conversation</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Voice</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Voice</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         Speak with the Scrum Master or Tech Lead, edit the transcript, then submit. Voice never changes sprint state
         by itself — confirmations stay explicit. Prefer typing? Use Type mode or continue in text chat.
       </p>
+      <div className="mt-4 flex w-fit items-center gap-1 rounded-lg border border-border bg-muted/40 p-1" role="group" aria-label="Voice goal">
+        <Button size="sm" variant={goal === "discuss" ? "secondary" : "ghost"} aria-pressed={goal === "discuss"} onClick={() => setGoal("discuss")}>
+          <MessagesSquare size={14} aria-hidden className="mr-1.5" />
+          Free discussion
+        </Button>
+        <Button size="sm" variant={goal === "standup" ? "secondary" : "ghost"} aria-pressed={goal === "standup"} onClick={() => { setGoal("standup"); setPersona("scrum-master"); setSessionId(null); }}>
+          <ClipboardCheck size={14} aria-hidden className="mr-1.5" />
+          Guided standup
+        </Button>
+      </div>
 
       <div className="mt-6 space-y-4">
         <Card>
@@ -240,7 +251,7 @@ export default function VoicePage() {
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2" role="tablist" aria-label="Persona">
               {(["tech-lead", "scrum-master"] as Persona[]).map((p) => (
-                <Button key={p} variant={persona === p ? "default" : "outline"} size="sm" onClick={() => { setPersona(p); setSessionId(null); }}>
+                <Button key={p} variant={persona === p ? "default" : "outline"} size="sm" disabled={goal === "standup"} title={goal === "standup" ? "Guided standup always uses the Scrum Master" : undefined} onClick={() => { setPersona(p); setSessionId(null); }}>
                   {p === "tech-lead" ? "Tech Lead" : "Scrum Master"}
                 </Button>
               ))}
@@ -328,7 +339,7 @@ export default function VoicePage() {
               </CardContent>
             </Card>
 
-            {persona === "scrum-master" ? (
+            {goal === "standup" ? (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Guided standup</CardTitle>
@@ -363,17 +374,17 @@ export default function VoicePage() {
                   {standupMsg ? <p role="status" className="text-sm text-muted-foreground">{standupMsg}</p> : null}
                 </CardContent>
               </Card>
-            ) : (
+            ) : persona === "tech-lead" ? (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Tip</CardTitle>
                   <CardDescription>
-                    Switch to the Scrum Master above for the guided yesterday/today/blockers flow. Confirmed blockers
-                    are shared with the Tech Lead automatically.
+                    Switch to Guided standup above for the yesterday/today/blockers flow with the Scrum Master.
+                    Confirmed blockers are shared with the Tech Lead automatically.
                   </CardDescription>
                 </CardHeader>
               </Card>
-            )}
+            ) : null}
           </>
         ) : (
           !me ? <Skeleton className="h-32 w-full rounded-xl" /> : (

@@ -29,6 +29,49 @@ function criteriaList(raw: TaskDetail["acceptance_criteria"]): string[] {
   return [];
 }
 
+function CriteriaChecklist({ taskId, criteria }: { taskId: string; criteria: string[] }) {
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`criteria:${taskId}`);
+      if (raw) setChecked(JSON.parse(raw) as Record<number, boolean>);
+    } catch {
+      /* personal checklist only — never blocks submission */
+    }
+  }, [taskId]);
+  function toggle(i: number) {
+    setChecked((prev) => {
+      const next = { ...prev, [i]: !prev[i] };
+      try {
+        localStorage.setItem(`criteria:${taskId}`, JSON.stringify(next));
+      } catch {
+        /* ignore private-mode write failures */
+      }
+      return next;
+    });
+  }
+  if (criteria.length === 0) {
+    return <p className="text-sm text-muted-foreground">No acceptance criteria listed.</p>;
+  }
+  return (
+    <ul className="space-y-1.5">
+      {criteria.map((c, i) => (
+        <li key={c}>
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg px-1 py-1 text-sm transition-colors hover:bg-muted/50">
+            <input
+              type="checkbox"
+              checked={!!checked[i]}
+              onChange={() => toggle(i)}
+              className="mt-1 h-4 w-4 shrink-0 accent-primary"
+            />
+            <span className={checked[i] ? "text-muted-foreground line-through" : undefined}>{c}</span>
+          </label>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 type Submission = {
   id: string;
   task_id: string;
@@ -162,7 +205,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
           <div className="mt-4 space-y-4 animate-fade-in">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{task.sprint_name} · {task.key}</p>
-              <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{task.title}</h1>
+              <h1 className="mt-1 text-2xl font-extrabold tracking-tight">{task.title}</h1>
               <div className="mt-3"><StatusBadge status={task.status} /></div>
             </div>
             <Card>
@@ -172,12 +215,10 @@ export default function TaskPage({ params }: { params: { id: string } }) {
             <Card>
               <CardHeader>
                 <CardTitle>Acceptance criteria</CardTitle>
-                <CardDescription>Checked by automated tests and review, not by hand.</CardDescription>
+                <CardDescription>Checked by automated tests and review, not by hand. Tick off what you have covered.</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="list-disc space-y-1 pl-5 text-sm">
-                  {criteriaList(task.acceptance_criteria).map((c) => <li key={c}>{c}</li>)}
-                </ul>
+                <CriteriaChecklist taskId={id} criteria={criteriaList(task.acceptance_criteria)} />
               </CardContent>
             </Card>
             {task.blocked_reason ? (

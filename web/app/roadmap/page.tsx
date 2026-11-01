@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Lock, MapPin } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
@@ -32,12 +33,23 @@ export default function RoadmapPage() {
         </p>
         {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         <ol className="mt-6 space-y-3">
-          {roadmap?.weeks.map((w) => (
+          {roadmap?.weeks.map((w) => {
+            const active = w.status === "active";
+            return (
             <li key={w.week}>
-              <Card>
+              <Card className={active ? "border-primary/40" : "opacity-75"}>
                 <CardHeader>
-                  <CardTitle>Week {w.week} — {w.title}</CardTitle>
-                  <CardDescription>{w.status === "active" ? "Active sprint" : "Upcoming"}</CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    {active ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                        <MapPin size={13} aria-hidden /> You are here
+                      </span>
+                    ) : (
+                      <Lock size={15} aria-hidden className="shrink-0 text-muted-foreground" />
+                    )}
+                    Week {w.week} — {w.title}
+                  </CardTitle>
+                  <CardDescription>{active ? "Active sprint" : "Planned — not yet available"}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">{w.summary}</p>
@@ -54,7 +66,8 @@ export default function RoadmapPage() {
                 </CardContent>
               </Card>
             </li>
-          ))}
+            );
+          })}
         </ol>
     </AppShell>
   );

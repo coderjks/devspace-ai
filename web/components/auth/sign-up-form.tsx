@@ -48,7 +48,11 @@ export function SignUpForm() {
       setDone(true);
       router.push("/onboarding");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Sign up failed.");
+      if (err instanceof TypeError) {
+        setFormError("Can't reach the server. Is the API running? See Help for setup steps.");
+      } else {
+        setFormError(err instanceof Error ? err.message : "Sign up failed.");
+      }
     } finally {
       setLoading(false);
     }

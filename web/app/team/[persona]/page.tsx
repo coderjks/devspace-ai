@@ -45,7 +45,7 @@ export default function ChatPage({ params }: { params: { persona: string } }) {
       ) : (
         <>
           <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Direct messages</p>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Team chat</h1>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Team chat</h1>
           <TeamChat initialPersona={persona} youName={displayName(me)} />
         </>
       )}
