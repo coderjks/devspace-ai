@@ -74,6 +74,7 @@ class User(Base):
     enrollments: Mapped[list["Enrollment"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     conversations: Mapped[list["AgentConversation"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     activity_events: Mapped[list["ActivityEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    standups: Mapped[list["Standup"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Enrollment(Base):
@@ -134,6 +135,7 @@ class Task(Base):
     rubric_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     status: Mapped[TaskStatus] = mapped_column(Enum(TaskStatus), nullable=False, default=TaskStatus.locked)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    blocked_reason: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     sprint: Mapped["Sprint"] = relationship(back_populates="tasks")
@@ -214,6 +216,23 @@ class AgentMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     conversation: Mapped["AgentConversation"] = relationship(back_populates="messages")
+
+
+class Standup(Base):
+    __tablename__ = "standups"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    task_id: Mapped[str | None] = mapped_column(ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
+    yesterday: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    today: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    blockers: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="proposed")
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="standups")
 
 
 class ActivityEvent(Base):

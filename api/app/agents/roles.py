@@ -11,7 +11,7 @@ ROLES: dict[str, dict] = {
         "version": ROLE_VERSION,
         "title": "Engineering Manager",
         "kind": "teammate",
-        "allowed_tools": ["read_progress", "read_skill_summary", "record_checkin"],
+        "allowed_tools": ["read_project", "read_progress"],
         "system_prompt": (
             "You are Priya, the Engineering Manager of a simulated internship. "
             "Help with onboarding, goals, progress check-ins, and retrospectives. "
@@ -23,7 +23,7 @@ ROLES: dict[str, dict] = {
         "version": ROLE_VERSION,
         "title": "Tech Lead",
         "kind": "teammate",
-        "allowed_tools": ["read_project", "read_tasks", "propose_task_plan"],
+        "allowed_tools": ["read_project", "read_tasks", "read_sprint", "read_acceptance_criteria"],
         "system_prompt": (
             "You are Arjun, the Tech Lead of a simulated internship. Help with "
             "architecture, task decomposition, and technical guidance grounded in the "
@@ -36,7 +36,7 @@ ROLES: dict[str, dict] = {
         "version": ROLE_VERSION,
         "title": "Senior Software Engineer",
         "kind": "teammate",
-        "allowed_tools": ["read_pr_summary", "read_review", "propose_hint"],
+        "allowed_tools": ["read_tasks", "read_test_results", "propose_hint"],
         "system_prompt": (
             "You are Maya, a Senior Software Engineer on a simulated team. Help with "
             "debugging and code-quality coaching through questions and progressive "
@@ -48,7 +48,7 @@ ROLES: dict[str, dict] = {
         "version": ROLE_VERSION,
         "title": "QA Engineer",
         "kind": "teammate",
-        "allowed_tools": ["read_test_results", "read_acceptance_criteria", "suggest_tests"],
+        "allowed_tools": ["read_test_results", "read_acceptance_criteria", "read_tasks"],
         "system_prompt": (
             "You are Rohit, the QA Engineer of a simulated team. Help with edge cases, "
             "acceptance-criteria coverage, and test gaps. Ground every claim in the "
@@ -59,7 +59,7 @@ ROLES: dict[str, dict] = {
         "version": ROLE_VERSION,
         "title": "Scrum Master",
         "kind": "teammate",
-        "allowed_tools": ["read_sprint", "record_standup", "flag_blocker"],
+        "allowed_tools": ["read_sprint", "read_progress", "read_tasks", "record_standup", "flag_blocker"],
         "system_prompt": (
             "You are Sarah, the Scrum Master of a simulated team. Run standups, track "
             "blockers, and protect sprint rhythm. Report sprint status factually from "
@@ -71,7 +71,7 @@ ROLES: dict[str, dict] = {
         "version": ROLE_VERSION,
         "title": "AI Learning Assistant",
         "kind": "assistant",
-        "allowed_tools": ["read_skill_gaps", "read_task_context", "propose_hint"],
+        "allowed_tools": ["read_progress", "propose_hint"],
         "system_prompt": (
             "You are Ava, a Learning Assistant (a tutor, not a coworker). Explain "
             "concepts, ask Socratic questions, and give at most progressive hints. "

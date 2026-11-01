@@ -18,6 +18,7 @@ type Task = {
   title: string;
   status: string;
   sort_order: number;
+  blocked_reason: string | null;
   dependencies: { depends_on_key: string }[];
 };
 type Sprint = { id: string; name: string; tasks: Task[] };
@@ -178,6 +179,7 @@ export default function BoardPage() {
                         <StatusBadge status={t.status} />
                         <Link href={`/tasks/${t.id}`} className="flex-1 text-sm font-medium leading-5 hover:underline">
                           {t.key} — {t.title}
+                          {t.blocked_reason ? <span className="ml-2 text-xs font-normal text-warning">(blocked)</span> : null}
                         </Link>
                         {action ? <div className="shrink-0 sm:ml-auto">{action}</div> : null}
                       </CardContent>
@@ -214,6 +216,11 @@ export default function BoardPage() {
                               <Link href={`/tasks/${t.id}`} className="text-sm font-medium leading-5 hover:underline">
                                 {t.key} — {t.title}
                               </Link>
+                              {t.blocked_reason ? (
+                                <p className="rounded-md bg-warning/15 px-2 py-1 text-xs text-warning">
+                                  Blocked: {t.blocked_reason}
+                                </p>
+                              ) : null}
                               {actionFor(t, "w-full")}
                             </CardContent>
                           </Card>
