@@ -9,7 +9,7 @@ import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
-import { describeEvent, isToday, type FeedEvent } from "@/lib/activity-feed";
+import { isToday } from "@/lib/activity-feed";
 
 type Task = { id: string; key: string; title: string; status: string };
 type Project = { id: string; name: string; description: string; sprint: { name: string; tasks: Task[] } | null };
@@ -99,7 +99,6 @@ export default function DashboardPage() {
 
   const tasks = project.sprint?.tasks ?? [];
   const nextTask = tasks.find((t) => t.status === "in_progress") ?? tasks.find((t) => t.status === "todo") ?? null;
-  const recentEvents = (progress?.recent_events ?? []) as FeedEvent[];
   const total = progress?.total_tasks ?? tasks.length;
   const done = progress?.completed_tasks ?? 0;
   const active = progress?.started_tasks ?? 0;
@@ -200,22 +199,6 @@ export default function DashboardPage() {
 
         {/* Side panel */}
         <div className="space-y-4 lg:col-span-2">
-          {/* Stats strip */}
-          <Card>
-            <CardContent className="grid grid-cols-3 divide-x divide-border p-0">
-              {[
-                { value: progress?.total_tasks ?? "—", label: "Tasks", href: "/board" },
-                { value: progress?.started_tasks ?? "—", label: "Active", href: "/board" },
-                { value: progress?.completed_tasks ?? "—", label: "Approved", href: "/progression" },
-              ].map((s) => (
-                <Link key={s.label} href={s.href} className="group px-3 py-3 text-center transition-colors duration-150 hover:bg-muted/50 first:rounded-l-xl last:rounded-r-xl">
-                  <p className="text-xl font-extrabold tabular-nums leading-none">{s.value}</p>
-                  <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground group-hover:text-foreground">{s.label}</p>
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
-
           {/* Today checklist */}
           <Card>
             <CardHeader className="pb-2">
@@ -272,23 +255,20 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Recent activity */}
+          {/* Growth snapshot link — stats and full history live on the Growth page */}
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Recent activity</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {recentEvents.length === 0 ? (
-                <p className="px-1 pb-1 text-sm text-muted-foreground">No recent activity yet.</p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {recentEvents.slice(0, 4).map((e, i) => (
-                    <li key={`${e.created_at}-${i}`} className="truncate py-2 text-sm font-medium">
-                      {describeEvent(e)}
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <CardContent className="flex items-center justify-between gap-3 p-4">
+              <div>
+                <p className="text-sm font-semibold">Growth snapshot</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {done} of {total} approved{active > 0 ? ` · ${active} in progress` : ""}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild className="h-7 shrink-0 text-xs">
+                <Link href="/progression">
+                  View growth <ArrowRight size={13} aria-hidden />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
