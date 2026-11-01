@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
@@ -26,7 +29,7 @@ export default function TeamPage() {
     <AppShell email={me?.email}>
         <h1 className="text-2xl font-bold tracking-tight">Your virtual team</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Five AI teammates plus a separate Learning Assistant. Conversations arrive in Phase 03.
+          Five AI teammates plus a separate Learning Assistant. Chat with any of them about your work.
         </p>
         {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -36,7 +39,12 @@ export default function TeamPage() {
                 <CardTitle>{m.name} — {m.role}</CardTitle>
                 <CardDescription>{m.kind === "assistant" ? "Learning support" : "Teammate"}</CardDescription>
               </CardHeader>
-              <CardContent><p className="text-sm text-muted-foreground">{m.responsibilities}</p></CardContent>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">{m.responsibilities}</p>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/team/${m.id}`}>Chat <ArrowRight size={14} aria-hidden /></Link>
+                </Button>
+              </CardContent>
             </Card>
           ))}
         </div>

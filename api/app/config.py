@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     seed_demo_password: str = Field(default="DemoPass123!", alias="SEED_DEMO_PASSWORD")
     seed_demo_name: str = Field(default="Demo Student", alias="SEED_DEMO_NAME")
 
+    llm_provider: str = Field(default="mock", alias="LLM_PROVIDER")
+    model_api_base_url: str = Field(
+        default="https://api.meta.ai/v1", alias="MODEL_API_BASE_URL"
+    )
+    model_api_key: str = Field(default="", alias="MODEL_API_KEY")
+    model_id: str = Field(default="", alias="MODEL_ID")
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
