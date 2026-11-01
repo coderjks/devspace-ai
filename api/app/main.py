@@ -2,7 +2,25 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import auth, diagnostics, enrollments, health, progress, projects, roadmap, tasks, team, users
+from app.routers import (
+    activity,
+    agents,
+    auth,
+    diagnostics,
+    enrollments,
+    evaluations,
+    github,
+    health,
+    progress,
+    progression,
+    projects,
+    roadmap,
+    standups,
+    tasks,
+    team,
+    users,
+    voice,
+)
 
 settings = get_settings()
 
@@ -26,6 +44,13 @@ app.include_router(tasks.router)
 app.include_router(progress.router)
 app.include_router(roadmap.router)
 app.include_router(team.router)
+app.include_router(agents.router)
+app.include_router(standups.router)
+app.include_router(activity.router)
+app.include_router(github.router)
+app.include_router(evaluations.router)
+app.include_router(progression.router)
+app.include_router(voice.router)
 
 
 @app.get("/")

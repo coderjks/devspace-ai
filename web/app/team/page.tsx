@@ -1,45 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppShell } from "@/components/app-shell";
+import { TeamChat } from "@/components/team-chat";
 import { api } from "@/lib/api";
 
-type Member = { id: string; name: string; role: string; responsibilities: string; kind: string };
 type Me = { email: string };
 
 export default function TeamPage() {
   const [me, setMe] = useState<Me | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([api<Me>("/api/auth/me"), api<{ members: Member[] }>("/api/team")])
-      .then(([meData, team]) => {
-        setMe(meData);
-        setMembers(team.members);
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load team"));
+    api<Me>("/api/auth/me").then(setMe).catch(() => {});
   }, []);
 
   return (
     <AppShell email={me?.email}>
-        <h1 className="text-2xl font-bold tracking-tight">Your virtual team</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Five AI teammates plus a separate Learning Assistant. Conversations arrive in Phase 03.
-        </p>
-        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {members.map((m) => (
-            <Card key={m.id}>
-              <CardHeader>
-                <CardTitle>{m.name} — {m.role}</CardTitle>
-                <CardDescription>{m.kind === "assistant" ? "Learning support" : "Teammate"}</CardDescription>
-              </CardHeader>
-              <CardContent><p className="text-sm text-muted-foreground">{m.responsibilities}</p></CardContent>
-            </Card>
-          ))}
-        </div>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Direct messages</p>
+      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Team chat</h1>
+      <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+        Five AI teammates plus a separate Learning Assistant. Pick a teammate on the left — their chat loads on the right.
+      </p>
+      <TeamChat youName={me?.email ? me.email.split("@")[0] : "You"} />
     </AppShell>
   );
 }

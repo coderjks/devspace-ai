@@ -140,6 +140,10 @@
   from { background-position: -200% 0; }
   to { background-position: 200% 0; }
 }
+@keyframes avatar-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
 
 @layer utilities {
   /* Scroll-triggered reveal (paired with the Reveal component).
@@ -162,6 +166,12 @@
   .enter-rise {
     animation: fade-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: var(--enter-delay, 0ms);
+  }
+
+  /* Gentle idle bob for teammate avatars. The global reduced-motion guard
+     collapses this to a single frame. */
+  .animate-avatar-bob {
+    animation: avatar-bob 3.2s ease-in-out infinite;
   }
 
   /* Soft token-based radial glow for hero / CTA backdrops. Never a flat neon wash:

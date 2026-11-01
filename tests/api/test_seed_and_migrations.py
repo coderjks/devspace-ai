@@ -40,8 +40,9 @@ def test_seed_is_idempotent(db_session):
 def test_alembic_initial_revision_exists():
     versions = list((Path(__file__).resolve().parents[2] / "api" / "alembic" / "versions").glob("*.py"))
     assert versions, "expected at least one Alembic revision"
-    text = versions[0].read_text()
-    assert 'revision: str = "20261027_0001"' in text
+    initial = [v for v in versions if 'revision: str = "20261027_0001"' in v.read_text()]
+    assert initial, "expected the initial 20261027_0001 revision"
+    text = initial[0].read_text()
     assert "def upgrade" in text and "def downgrade" in text
 
 

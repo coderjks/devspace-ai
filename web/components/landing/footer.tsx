@@ -43,7 +43,7 @@ export function Footer() {
               <Link href="/board" className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">Sprint Board</Link>
             </li>
             <li>
-              <Link href="/progress" className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">Progress</Link>
+              <Link href="/progression" className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">Growth</Link>
             </li>
           </ul>
         </div>

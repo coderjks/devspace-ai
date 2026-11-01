@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -74,6 +75,8 @@ class User(Base):
     enrollments: Mapped[list["Enrollment"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     conversations: Mapped[list["AgentConversation"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     activity_events: Mapped[list["ActivityEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    standups: Mapped[list["Standup"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    repositories: Mapped[list["Repository"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Enrollment(Base):
@@ -134,6 +137,7 @@ class Task(Base):
     rubric_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     status: Mapped[TaskStatus] = mapped_column(Enum(TaskStatus), nullable=False, default=TaskStatus.locked)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    blocked_reason: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     sprint: Mapped["Sprint"] = relationship(back_populates="tasks")
@@ -165,10 +169,15 @@ class Submission(Base):
     repository_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     head_sha: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[SubmissionStatus] = mapped_column(Enum(SubmissionStatus), nullable=False, default=SubmissionStatus.draft)
+    pr_state: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
+    merged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="webhook")
+    last_delivery_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     task: Mapped["Task"] = relationship(back_populates="submissions")
     evaluations: Mapped[list["Evaluation"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
+    approvals: Mapped[list["Approval"]] = relationship(back_populates="submission", cascade="all, delete-orphan")
 
 
 class Evaluation(Base):
@@ -216,6 +225,23 @@ class AgentMessage(Base):
     conversation: Mapped["AgentConversation"] = relationship(back_populates="messages")
 
 
+class Standup(Base):
+    __tablename__ = "standups"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    task_id: Mapped[str | None] = mapped_column(ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
+    yesterday: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    today: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    blockers: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="proposed")
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="standups")
+
+
 class ActivityEvent(Base):
     __tablename__ = "activity_events"
 
@@ -229,3 +255,138 @@ class ActivityEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     user: Mapped["User | None"] = relationship(back_populates="activity_events")
+
+
+class Repository(Base):
+    """A student-linked GitHub repository (Phase 05).
+
+    Linked either via GitHub App installation (installation_id set) or manual
+    entry (installation_id None) until the App is installed. Webhooks only map
+    PRs from repositories linked here — unlinked repos are acknowledged and
+    ignored.
+    """
+
+    __tablename__ = "repositories"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    github_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    installation_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="repositories")
+
+    __table_args__ = (UniqueConstraint("user_id", "full_name", name="uq_repository_user_full_name"),)
+
+
+class Approval(Base):
+    """Deterministic policy verdict for one submission (Phase 07).
+
+    Exactly one row per submission (unique submission_id): the policy runs
+    once, unlocks run once, and repeat requests return the stored verdict.
+    The LLM review is only ever a veto — approval rests on trusted checks.
+    """
+
+    __tablename__ = "approvals"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    submission_id: Mapped[str] = mapped_column(ForeignKey("submissions.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    evaluation_id: Mapped[str] = mapped_column(ForeignKey("evaluations.id", ondelete="SET NULL"), nullable=True)
+    decision: Mapped[str] = mapped_column(String(20), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    policy_version: Mapped[str] = mapped_column(String(50), nullable=False, default="policy-1")
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    submission: Mapped["Submission"] = relationship(back_populates="approvals")
+
+
+class Competency(Base):
+    """Per-student skill evidence from approval verdicts (Phase 07)."""
+
+    __tablename__ = "competencies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    skill: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)
+
+    __table_args__ = (UniqueConstraint("user_id", "skill", name="uq_competency_user_skill"),)
+
+
+class Remediation(Base):
+    """Targeted remediation + 3 progressive hints for a denied approval.
+
+    Hints are generated from check evidence (templates + quoted findings) —
+    guidance only, never a full solution dump.
+    """
+
+    __tablename__ = "remediations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    approval_id: Mapped[str] = mapped_column(ForeignKey("approvals.id", ondelete="CASCADE"), unique=True, nullable=False)
+    failed_checks: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
+    hints: Mapped[dict] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class VoiceSession(Base):
+    """A consented voice conversation (Phase 08).
+
+    One persona per session (Scrum Master or Tech Lead) — no group meetings.
+    Raw audio is never persisted; only transcripts and turn metadata are.
+    """
+
+    __tablename__ = "voice_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    persona: Mapped[str] = mapped_column(String(100), nullable=False)
+    consent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    language_hint: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    turns: Mapped[list["VoiceTurn"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+
+
+class VoiceTurn(Base):
+    """One push-to-talk turn: transcript in, reply out (Phase 08)."""
+
+    __tablename__ = "voice_turns"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    session_id: Mapped[str] = mapped_column(ForeignKey("voice_sessions.id", ondelete="CASCADE"), index=True, nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    input_mode: Mapped[str] = mapped_column(String(10), nullable=False, default="voice")
+    transcript: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    submitted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stt_mock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    reply_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tts_mock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    audio_stored: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    session: Mapped["VoiceSession"] = relationship(back_populates="turns")
+
+
+class WebhookDelivery(Base):
+    """One GitHub webhook delivery (Phase 05).
+
+    delivery_id is GitHub's X-GitHub-Delivery header — the idempotency key.
+    Re-deliveries of the same ID are acknowledged without reprocessing.
+    """
+
+    __tablename__ = "webhook_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    delivery_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    event: Mapped[str] = mapped_column(String(100), nullable=False)
+    action: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    repo_full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    processed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)

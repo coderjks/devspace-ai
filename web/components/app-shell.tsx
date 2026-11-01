@@ -4,11 +4,17 @@ import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
+  CalendarCheck,
+  Github,
   KanbanSquare,
   LayoutDashboard,
   Map,
   Menu,
-  TrendingUp,
+  Trophy,
+  Mic,
+  GraduationCap,
+  CircleHelp,
   User,
   Users,
   X,
@@ -21,9 +27,15 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/board", label: "Board", icon: KanbanSquare },
+  { href: "/standup", label: "Standup", icon: CalendarCheck },
+  { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/github", label: "GitHub", icon: Github },
+  { href: "/progression", label: "Growth", icon: Trophy },
+  { href: "/voice", label: "Voice", icon: Mic },
+  { href: "/learning", label: "Learning", icon: GraduationCap },
+  { href: "/help", label: "Help", icon: CircleHelp },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/team", label: "Team", icon: Users },
-  { href: "/progress", label: "Progress", icon: TrendingUp },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
