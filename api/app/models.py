@@ -147,6 +147,27 @@ class Task(Base):
     submissions: Mapped[list["Submission"]] = relationship(back_populates="task", cascade="all, delete-orphan")
 
 
+class UserTaskState(Base):
+    """Per-student progress on a shared sprint task.
+
+    Task rows are curriculum templates shared by every intern; the mutable
+    per-student position (board status, personal blocker note) lives here.
+    A student's effective status resolves as: approved (own approval) >
+    this row > unlocked-base (locked template whose prerequisites the
+    student approved) > template status.
+    """
+
+    __tablename__ = "user_task_states"
+    __table_args__ = (UniqueConstraint("user_id", "task_id", name="uq_user_task_state"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), index=True, nullable=False)
+    status: Mapped[TaskStatus] = mapped_column(Enum(TaskStatus), nullable=False)
+    blocked_reason: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
 class TaskDependency(Base):
     __tablename__ = "task_dependencies"
     __table_args__ = (UniqueConstraint("task_id", "depends_on_task_id", name="uq_task_dependency"),)

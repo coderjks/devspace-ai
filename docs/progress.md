@@ -302,3 +302,17 @@ Commands run in this session; exit statuses observed, not assumed.
 **Acceptance:** Enroll → open ticket → start work → persisted dashboard updates ✓ (verified live with a fresh user).
 
 **Known limitations:** Diagnostic answers are a fixed server-side set (calibration only, not proctored). Team directory is static content (chat arrives in Phase 03). No Vitest suite yet — web covered by `typecheck` + `build` (Q10 partial). Full-Compose image stack still `UNTESTED`. Servers stopped after verification; nothing running. Phase 02 uncommitted on `feat/02-onboarding-board`.
+
+---
+
+## 11. Per-user task-status fix (2026-11-01, branch `fix/per-user-task-status`)
+
+Bug: `Task.status` / `blocked_reason` lived on shared curriculum rows, so one student's moves, approvals, and blocker notes leaked onto every other student's board. Fresh signups could see AI-001 already completed.
+
+Fix: shared `Task` rows are now templates only. Each student's position lives in a new `user_task_states` table (migration `b7e2f1a4c9d0`, applied clean on a fresh DB + seeded template `AI-001 todo`, rest `locked`). New resolver `api/app/task_state.py::resolve_statuses` computes the effective status per student (own approval → own state row → derived unlock → template); all board/progress/roadmap/eligibility/check-in/agent-tool reads go through it, and transitions/approvals/`flag_blocker` write only `UserTaskState`.
+
+Verification (observed, not assumed):
+- `pytest tests/api` — **116 passed**, incl. new `test_task_state_is_isolated_between_students` (Alice approves + moves AI-002 while Bob keeps template board, locked prerequisites, `next_recommended_key AI-001`, 0 completed).
+- `ruff check app` (project config) + `mypy app` (49 files) — clean. Two remaining `tests/` lint notes (`F401 Task`, `F841 sub`) pre-exist at HEAD; dead `Task` import removed.
+- Fresh-DB `alembic upgrade head` + seed — clean; template statuses confirmed.
+- Live on :8000: two fresh registrations both see `AI-001 todo`/rest `locked`; A moves AI-001 → `in_progress`, B still `todo`. Probe users removed afterwards.

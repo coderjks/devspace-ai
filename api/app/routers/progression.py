@@ -21,6 +21,7 @@ from app.schemas import (
     RemediationOut,
     TaskEligibilityOut,
 )
+from app.task_state import resolve_statuses
 
 router = APIRouter(tags=["progression"])
 
@@ -132,6 +133,7 @@ def task_eligibility(
         db.query(Task).filter(Task.sprint_id == sprint.id).order_by(Task.sort_order.asc()).all()
     )
     by_id = {t.id: t for t in tasks}
+    effective, _ = resolve_statuses(db, current_user.id, tasks)
     items: list[TaskEligibilityOut] = []
     for task in tasks:
         prereqs: list[PrereqOut] = []
@@ -139,7 +141,7 @@ def task_eligibility(
             pre = by_id.get(dep.depends_on_task_id)
             if pre is None:
                 continue
-            prereqs.append(PrereqOut(key=pre.key, title=pre.title, met=pre.status == TaskStatus.approved))
+            prereqs.append(PrereqOut(key=pre.key, title=pre.title, met=effective.get(pre.id) == TaskStatus.approved))
         latest = None
         subs = (
             db.query(Submission)
@@ -161,7 +163,7 @@ def task_eligibility(
                 task_id=task.id,
                 key=task.key,
                 title=task.title,
-                status=task.status.value,
+                status=effective[task.id].value,
                 prerequisites=prereqs,
                 latest_decision=latest.decision if latest else None,
                 latest_reason=latest.reason if latest else None,

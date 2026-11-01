@@ -6,7 +6,6 @@ import pytest
 
 from app.eval.pipeline import run_evaluation
 from app.eval.review import mock_review
-from app.models import Task
 from app.progression.service import decide
 
 DIFF_CLEAN = """diff --git a/api.py b/api.py
@@ -27,17 +26,14 @@ def _no_real_queue(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _restore_global_task_statuses(db_session):
-    # Task statuses are global to the shared sprint seed: snapshot before each
-    # test and restore after, so approval side effects never leak into others.
-    from app.models import Task as _Task
+def _clean_user_task_states(db_session):
+    # Board positions are per-student rows now: drop them after each test so
+    # one test's transitions never leak into another's. Shared Task rows are
+    # templates and are never mutated anymore.
+    from app.models import UserTaskState as _UTS
 
-    snapshot = {t.id: t.status for t in db_session.query(_Task).all()}
     yield
-    for tid, status in snapshot.items():
-        row = db_session.query(_Task).filter(_Task.id == tid).first()
-        if row is not None:
-            row.status = status
+    db_session.query(_UTS).delete()
     db_session.commit()
 
 
@@ -203,8 +199,8 @@ def test_decide_pure_rules_cover_stale_and_closed(db_session):
 def test_eligibility_is_server_derived(client, db_session):
     headers = _register(client, "prog-elig@test.local")
     _enroll(client, headers)
-    # Task statuses are global to the shared sprint seed, so assert structure
-    # and internal consistency rather than absolute initial statuses.
+    # Fresh students start from the seeded template (AI-001 todo, rest
+    # locked); statuses below are this student's effective view.
     elig = client.get("/api/progress/eligibility", headers=headers).json()
     by_key = {t["key"]: t for t in elig["tasks"]}
     assert {t["key"] for t in elig["tasks"]} == {"AI-001", "AI-002", "AI-003", "AI-004", "AI-005", "AI-006"}
@@ -222,3 +218,52 @@ def test_eligibility_is_server_derived(client, db_session):
     assert by_key["AI-001"]["latest_decision"] == "approved"
     assert by_key["AI-002"]["prerequisites"][0]["met"] is True
     assert elig["next_recommended_key"] in {t["key"] for t in elig["tasks"] if t["status"] == "todo"}
+
+
+def test_task_state_is_isolated_between_students(client, db_session):
+    # Regression: one student's transitions and approvals must never leak
+    # onto another student's board, progress, or eligibility.
+    alice = _register(client, "prog-alice@test.local")
+    _enroll(client, alice)
+    bob = _register(client, "prog-bob@test.local")
+    _enroll(client, bob)
+
+    def statuses(headers):
+        tasks = client.get("/api/sprints/current", headers=headers).json()["tasks"]
+        return {t["key"]: t["status"] for t in tasks}
+
+    template = {
+        "AI-001": "todo",
+        "AI-002": "locked",
+        "AI-003": "locked",
+        "AI-004": "locked",
+        "AI-005": "locked",
+        "AI-006": "locked",
+    }
+    assert statuses(bob) == template
+
+    # Alice approves AI-001 (unlocks AI-002/AI-003 for her only) and starts AI-002.
+    sid = _submit(client, alice, "AI-001", "c" * 40, "student/alice-repo")
+    _evaluate(db_session, sid, "c" * 40, DIFF_CLEAN)
+    assert _approve(client, alice, sid).json()["decision"] == "approved"
+    assert statuses(alice)["AI-001"] == "approved"
+    assert statuses(alice)["AI-002"] == "todo"
+    tid = next(
+        t["id"]
+        for t in client.get("/api/sprints/current", headers=alice).json()["tasks"]
+        if t["key"] == "AI-002"
+    )
+    res = client.post(f"/api/tasks/{tid}/transitions", json={"to_status": "in_progress"}, headers=alice)
+    assert res.status_code == 200, res.text
+    assert res.json()["status"] == "in_progress"
+
+    # Bob's world is untouched: template board, nothing approved, still locked.
+    assert statuses(bob) == template
+    elig = client.get("/api/progress/eligibility", headers=bob).json()
+    by_key = {t["key"]: t for t in elig["tasks"]}
+    assert by_key["AI-001"]["status"] == "todo"
+    assert by_key["AI-002"]["prerequisites"][0]["met"] is False
+    assert elig["next_recommended_key"] == "AI-001"
+    prog = client.get("/api/progress", headers=bob).json()
+    assert prog["completed_tasks"] == 0
+    assert prog["by_status"]["locked"] == 5
