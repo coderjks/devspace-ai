@@ -253,6 +253,7 @@ class SystemEventOut(BaseModel):
     action: str
     object_type: str | None
     object_id: str | None
+    payload: dict = {}
     created_at: datetime
 
 
@@ -480,3 +481,44 @@ class VoiceSubmitOut(BaseModel):
     reply_mock: bool = True
     audio_wav_base64: str | None = None
     audio_mock: bool = True
+
+
+class CertificateSkillOut(BaseModel):
+    skill: str
+    score: int
+    evidence_count: int
+
+
+class CertificateProgramOut(BaseModel):
+    sprint: str = ""
+    tickets_approved: int = 0
+    tickets_total: int = 0
+
+
+class CertificateOut(BaseModel):
+    id: str
+    track: str
+    recipient_name: str
+    skills: list[CertificateSkillOut] = []
+    program: CertificateProgramOut = CertificateProgramOut()
+    issued_at: datetime
+    # Full public credential (code.signature) for the QR. Only ever exposed
+    # to the certificate owner; the verify endpoint never returns it.
+    credential: str
+
+
+class MyCertificateOut(BaseModel):
+    certificate: CertificateOut | None = None
+    eligible: bool = False
+    approved: int = 0
+    total: int = 0
+    remaining: list[str] = []
+
+
+class VerifyCertificateOut(BaseModel):
+    valid: bool = False
+    recipient_name: str | None = None
+    track: str | None = None
+    issued_at: datetime | None = None
+    skills: list[CertificateSkillOut] = []
+    program: CertificateProgramOut = CertificateProgramOut()

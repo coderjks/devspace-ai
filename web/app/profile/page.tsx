@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
+import { humanize } from "@/lib/utils";
 
 type Me = { id: string; email: string; full_name: string };
 type Enrollment = { id: string; track: string; status: string; skill_level: string };
@@ -151,7 +152,7 @@ export default function ProfilePage() {
                   <div key={en.id} className="flex justify-between gap-4">
                     <dt className="text-muted-foreground">Enrollment</dt>
                     <dd className="text-right font-medium">
-                      {en.track} · {en.status} · {en.skill_level}
+                      {humanize(en.track)} · {humanize(en.status)} · {humanize(en.skill_level)}
                     </dd>
                   </div>
                 ))}

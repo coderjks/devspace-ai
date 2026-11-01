@@ -1,9 +1,16 @@
+export type TransitionPayload = {
+  key?: string;
+  from?: string;
+  to?: string;
+};
+
 export type FeedEvent = {
   id: string;
   actor: string | null;
   action: string;
   object_type: string | null;
   object_id: string | null;
+  payload?: TransitionPayload | null;
   created_at: string;
 };
 
@@ -32,16 +39,32 @@ export function isToday(iso: string): boolean {
 
 /** Best-effort human sentence for a raw system event. Unknown actions fall
  * back to a prettified action name rather than raw `snake.case` internals. */
-export function describeEvent(e: FeedEvent): string {
+export function describeEvent(e: {
+  action: string;
+  actor?: string | null;
+  object_type?: string | null;
+  object_id?: string | null;
+  payload?: TransitionPayload | null;
+}): string {
   const actor = e.actor ?? "";
   if (e.action === "agent_reply" && actor.startsWith("agent:")) {
     return `${personaLabel(actor.slice("agent:".length))} replied in chat`;
+  }
+  if (e.action === "task.transition") {
+    // The key (AI-001) is the human handle; the UUID in object_id must never
+    // reach the UI. Older rows predate payload logging — fall back to a
+    // generic sentence rather than leaking the id.
+    const key = e.payload?.key;
+    const from = e.payload?.from;
+    const to = e.payload?.to;
+    if (key && from && to) return `${key} moved from ${from} to ${to}`;
+    if (key) return `${key} changed status`;
+    return "A task changed status";
   }
   const sentences: Record<string, string> = {
     "enrollment.created": "You enrolled in the internship",
     "standup.proposed": "You drafted a standup",
     "standup.confirmed": "You confirmed a standup",
-    "task.transition": e.object_id ? `Task ${e.object_id} changed status` : "A task changed status",
     "password.changed": "You changed your password",
     "enrollment.skill_updated": "You updated your skill level",
     "evaluation.completed": "An evaluation finished",

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
+import { humanize } from "@/lib/utils";
 
 type Question = { id: string; prompt: string; choices: string[] };
 type Score = { score: number; total: number };
@@ -289,7 +290,7 @@ export default function OnboardingPage() {
             <div className="space-y-1">
               <label htmlFor="skill" className="text-sm font-medium">Current skill level</label>
               <select id="skill" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={skill} onChange={(e) => setSkill(e.target.value)}>
-                {SKILLS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {SKILLS.map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
               </select>
             </div>
             <div className="space-y-1">
@@ -309,7 +310,7 @@ export default function OnboardingPage() {
         <Card className="mt-4">
           <CardHeader>
             <CardTitle>Review and confirm</CardTitle>
-            <CardDescription>One track is available in the hackathon.</CardDescription>
+            <CardDescription>Confirm your details to join the Applied AI Engineering track.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <dl className="space-y-2 text-sm">
@@ -323,7 +324,7 @@ export default function OnboardingPage() {
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Skill level</dt>
-                <dd className="font-medium">{skill}</dd>
+                <dd className="font-medium">{humanize(skill)}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Goals</dt>

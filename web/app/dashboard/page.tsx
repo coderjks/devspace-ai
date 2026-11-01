@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, CircleDashed } from "lucide-react";
+import { ArrowRight, Award, CheckCircle2, CircleDashed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { TeamStrip } from "@/components/team-strip";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
 import { isToday } from "@/lib/activity-feed";
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [standupDone, setStandupDone] = useState<boolean | null>(null);
   const [prCount, setPrCount] = useState<number | null>(null);
+  const [certIssued, setCertIssued] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,6 +49,10 @@ export default function DashboardPage() {
         setPrCount(subs.length);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
+    // Certificate status is best-effort: the dashboard is fully usable without it.
+    api<{ certificate: { id: string } | null }>("/api/certificates/me")
+      .then((me) => setCertIssued(me.certificate !== null))
+      .catch(() => {});
   }, []);
 
   if (error) {
@@ -55,7 +61,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Sign in required</CardTitle>
-            <CardDescription>{error}. The API must be running and seeded.</CardDescription>
+            <CardDescription>{error}. Check your connection and try signing in again.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
@@ -142,13 +148,32 @@ export default function DashboardPage() {
               </Link>
             </Button>
           </>
+        ) : done === total && total > 0 ? (
+          <p className="text-sm">
+            <span className="font-semibold">Sprint complete</span>
+            <span className="text-muted-foreground"> — all {total} tickets approved. Nicely done.</span>
+          </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            All caught up — every task is locked, in review, or approved.{" "}
+            Nothing actionable right now — check the board for review or locked tickets.{" "}
             <Link href="/progression" className="font-medium text-primary hover:underline">View growth</Link>
           </p>
         )}
       </div>
+
+      {certIssued ? (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-[#c9b98a]/60 bg-[#fdfbf5] px-4 py-2.5 dark:bg-[#232a36]">
+          <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a6d2b] dark:text-[#d3b968]">
+            <Award size={13} aria-hidden /> Certificate issued
+          </p>
+          <p className="text-sm text-muted-foreground">Your completion certificate is ready to share.</p>
+          <Button size="sm" variant="outline" asChild className="ml-auto h-7 text-xs">
+            <Link href="/certificate">
+              View certificate <ArrowRight size={13} aria-hidden />
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mt-4 grid items-start gap-4 lg:grid-cols-5">
         {/* Sprint panel */}
@@ -254,6 +279,9 @@ export default function DashboardPage() {
               </ul>
             </CardContent>
           </Card>
+
+          {/* AI team — avatars deep-link into chat; directory lives on the Team page */}
+          <TeamStrip />
 
           {/* Growth snapshot link — stats and full history live on the Growth page */}
           <Card>

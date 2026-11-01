@@ -66,7 +66,7 @@ export function TeamChat({ initialPersona, youName }: { initialPersona?: string;
                         <span className="block truncate text-xs text-muted-foreground">{m.role}</span>
                       </span>
                       {m.kind === "assistant" ? (
-                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">tutor</span>
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Tutor</span>
                       ) : null}
                       <ChevronRight size={15} aria-hidden className="shrink-0 text-muted-foreground" />
                     </button>

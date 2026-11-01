@@ -14,22 +14,47 @@ export const STT_UNAVAILABLE_MSG =
  * transcript). The transcript always lands in an editable field — voice never
  * submits anything by itself. Consent is captured inline before the mic opens.
  */
-export function useVoiceAnswer(onTranscript: (key: string, text: string) => void) {
-  const [consented, setConsented] = useState(false);
+const CONSENT_KEY = "devspace_voice_consent";
+
+function storedConsent(): boolean {
+  try {
+    return window.localStorage.getItem(CONSENT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function useVoiceAnswer(
+  onTranscript: (key: string, text: string) => void,
+  opts?: { persona?: string }
+) {
+  const [consented, setConsentedState] = useState(storedConsent);
+  const setConsented = useCallback((value: boolean) => {
+    setConsentedState(value);
+    try {
+      if (value) window.localStorage.setItem(CONSENT_KEY, "1");
+      else window.localStorage.removeItem(CONSENT_KEY);
+    } catch {
+      /* private mode — consent simply won't persist */
+    }
+  }, []);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [recordingKey, setRecordingKey] = useState<string | null>(null);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [secs, setSecs] = useState(0);
   const [busy, setBusy] = useState(false);
+  // Which answer is being transcribed: pages with one mic per question must
+  // spin only the tapped button, not every mic on screen.
+  const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
-  const keyRef = useRef<string | null>(null);
   const onTranscriptRef = useRef(onTranscript);
   onTranscriptRef.current = onTranscript;
   const provider = useProviderStatus();
   const sttReady = provider ? !provider.stt_mock : null;
+  const sessionPersona = opts?.persona ?? "scrum-master";
 
   useEffect(
     () => () => {
@@ -44,20 +69,24 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
     setRecordingKey(null);
     setMicStream(null);
-    keyRef.current = null;
   }, []);
 
   const upload = useCallback(
-    async (blob: Blob) => {
-      const sid = sessionId;
-      const key = keyRef.current;
+    // sid/key arrive as arguments captured at record time: the state values
+    // are stale inside the recorder's onstop closure on the very first tap
+    // (no session exists yet), which silently dropped the first recording.
+    async (sid: string | null, key: string | null, blob: Blob) => {
       stopTracks();
-      if (!sid || !key) return;
+      if (!sid || !key) {
+        setError("Recording wasn't linked to a session — try once more, or type instead.");
+        return;
+      }
       if (blob.size === 0) {
         setError("Nothing was recorded — check the microphone and try again, or type instead.");
         return;
       }
       setBusy(true);
+      setBusyKey(key);
       setError(null);
       try {
         const wav = await blobToWav16k(blob).catch(() => null);
@@ -77,9 +106,10 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
         setError(e instanceof Error ? e.message : "Transcription failed — type instead.");
       } finally {
         setBusy(false);
+        setBusyKey(null);
       }
     },
-    [sessionId, stopTracks]
+    [stopTracks]
   );
 
   const toggleRecord = useCallback(
@@ -99,7 +129,7 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
         try {
           const s = await api<{ id: string }>("/api/voice/sessions", {
             method: "POST",
-            body: JSON.stringify({ persona: "scrum-master", language_hint: "en", consent: true }),
+            body: JSON.stringify({ persona: sessionPersona, language_hint: "en", consent: true }),
           });
           sid = s.id;
           setSessionId(sid);
@@ -122,17 +152,18 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
       rec.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-      rec.onstop = () => upload(new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" }));
+      // Capture the fresh sid/key here: by stop time the state values may
+      // still hold the pre-session nulls from the first tap.
+      rec.onstop = () => upload(sid, key, new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" }));
       recorderRef.current = rec;
-      keyRef.current = key;
       rec.start();
       setMicStream(stream);
       setRecordingKey(key);
       setSecs(0);
       timerRef.current = window.setInterval(() => setSecs((s) => s + 1), 1000);
     },
-    [recordingKey, sessionId, sttReady, upload]
+    [recordingKey, sessionId, sttReady, upload, sessionPersona]
   );
 
-  return { consented, setConsented, recordingKey, micStream, secs, busy, error, toggleRecord, stopTracks, sttReady };
+  return { consented, setConsented, recordingKey, micStream, secs, busy, busyKey, error, toggleRecord, stopTracks, sttReady };
 }

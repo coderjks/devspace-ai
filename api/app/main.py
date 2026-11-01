@@ -6,6 +6,7 @@ from app.routers import (
     activity,
     agents,
     auth,
+    certificates,
     diagnostics,
     enrollments,
     evaluations,
@@ -51,6 +52,7 @@ app.include_router(github.router)
 app.include_router(evaluations.router)
 app.include_router(progression.router)
 app.include_router(voice.router)
+app.include_router(certificates.router)
 
 
 @app.get("/")

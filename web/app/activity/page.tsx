@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Flag, GitPullRequest, History, Inbox, MessagesSquare } from "lucide-react";
+import { Flag, GitPullRequest, History, Inbox } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
@@ -35,15 +35,6 @@ type SystemEvent = {
   created_at: string;
 };
 
-type RoleComment = {
-  id: string;
-  persona: string;
-  conversation_id: string;
-  conversation_title: string;
-  excerpt: string;
-  created_at: string;
-};
-
 type SubmissionItem = {
   id: string;
   task_id: string;
@@ -56,13 +47,8 @@ type SubmissionItem = {
 
 type Feed = {
   system_events: SystemEvent[];
-  role_comments: RoleComment[];
   submissions: { source: string; items: SubmissionItem[] };
 };
-
-function personaLabel(persona: string): string {
-  return persona.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-}
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -92,7 +78,7 @@ export default function ActivityPage() {
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Sprint activity & blockers</p>
       <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Activity</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Your confirmed standups and flagged blockers. Write today&apos;s standup to add a new entry.
+        A record of your standups and blockers. New entries appear here when you post a standup.
       </p>
       {error ? <p role="alert" className="mt-3 text-sm text-destructive">{error}</p> : null}
       {standups === null ? (
@@ -135,7 +121,7 @@ export default function ActivityPage() {
                 <CardTitle className="flex items-center gap-2 text-base">
                   <History size={16} aria-hidden className="text-primary" /> Sprint timeline
                 </CardTitle>
-                <CardDescription>Real system events from your sprint: enrollments, task moves, standups.</CardDescription>
+                <CardDescription>Your sprint history, newest first: enrollments, task moves, standups.</CardDescription>
               </CardHeader>
               <CardContent>
                 {(() => {
@@ -163,34 +149,6 @@ export default function ActivityPage() {
                     </div>
                   );
                 })()}
-              </CardContent>
-            </Card>
-          ) : null}
-          {feed !== null && feed.role_comments.length > 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <MessagesSquare size={16} aria-hidden className="text-primary" /> Teammate comments
-                </CardTitle>
-                <CardDescription>Recent AI teammate replies across your conversations.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {feed.role_comments.slice(0, 10).map((c) => (
-                    <li key={c.id} className="rounded-lg border border-border px-3 py-2 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
-                          {personaLabel(c.persona)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{formatWhen(c.created_at)}</span>
-                      </div>
-                      <p className="mt-1.5 text-muted-foreground">{c.excerpt}</p>
-                      <Link href={`/team/${c.persona}`} className="mt-1 inline-block text-xs font-medium text-primary hover:underline">
-                        Open {c.conversation_title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
               </CardContent>
             </Card>
           ) : null}

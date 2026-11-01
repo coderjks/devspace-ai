@@ -112,7 +112,12 @@ def manager_check_in(
     if standups:
         highlights.append(f"{len(standups)} standup{'s' if len(standups) != 1 else ''} confirmed.")
     if comps:
-        top = ", ".join(f"{c.skill.replace('_', ' ')} ({c.score})" for c in comps[:3])
+        acronyms = {"ai": "AI", "api": "API", "apis": "APIs", "pr": "PR"}
+        top = ", ".join(
+            " ".join(acronyms.get(w.lower(), w.capitalize()) for w in c.skill.replace("_", " ").split())
+            + f" ({c.score})"
+            for c in comps[:3]
+        )
         highlights.append(f"Strongest skill evidence: {top}.")
     if not highlights:
         highlights.append("No approvals or standups yet — the journey starts with onboarding and the first ticket.")

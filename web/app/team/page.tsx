@@ -26,7 +26,7 @@ export default function TeamPage() {
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Direct messages</p>
       <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Team chat</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Five AI teammates plus a separate Learning Assistant. Pick a teammate on the left — their chat loads on the right.
+        Chat with your AI engineering team — pick someone on the left to start talking.
       </p>
       <TeamChat youName={displayName(me)} />
     </AppShell>

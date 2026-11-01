@@ -53,9 +53,13 @@ def test_consent_required_and_persona_allowlist(client):
     _enroll(client, headers)
     res = client.post("/api/voice/sessions", json={"persona": "tech-lead", "consent": False}, headers=headers)
     assert res.status_code == 422
-    res = client.post(
-        "/api/voice/sessions", json={"persona": "engineering-manager", "consent": True}, headers=headers
-    )
+    # Every real teammate persona may own a dictation session; only unknown
+    # personas are rejected.
+    for persona in ("engineering-manager", "qa-engineer", "learning-assistant"):
+        res = client.post("/api/voice/sessions", json={"persona": persona, "consent": True}, headers=headers)
+        assert res.status_code == 201, (persona, res.text)
+        assert res.json()["persona"] == persona
+    res = client.post("/api/voice/sessions", json={"persona": "not-a-teammate", "consent": True}, headers=headers)
     assert res.status_code == 422
     assert client.post("/api/voice/sessions", json={"persona": "tech-lead", "consent": True}).status_code in (401, 403)
 

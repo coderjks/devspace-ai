@@ -32,7 +32,7 @@ export default function RoadmapPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Internship journey</p>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight">12-week Applied AI Engineering roadmap</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Only Sprint 1 is fully specified for the hackathon. Later weeks are the product roadmap.
+          Sprint 1 is ready to work through — later weeks outline what&apos;s coming.
         </p>
         {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         <ol className="relative mt-6 space-y-4 before:absolute before:bottom-6 before:left-[15px] before:top-6 before:w-px before:bg-border">
