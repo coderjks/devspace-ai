@@ -10,6 +10,7 @@ ROLES: dict[str, dict] = {
     "engineering-manager": {
         "version": ROLE_VERSION,
         "title": "Engineering Manager",
+        "name": "Priya Rao",
         "kind": "teammate",
         "allowed_tools": ["read_project", "read_progress"],
         "system_prompt": (
@@ -22,6 +23,7 @@ ROLES: dict[str, dict] = {
     "tech-lead": {
         "version": ROLE_VERSION,
         "title": "Tech Lead",
+        "name": "Arjun Iyer",
         "kind": "teammate",
         "allowed_tools": ["read_project", "read_tasks", "read_sprint", "read_acceptance_criteria"],
         "system_prompt": (
@@ -35,6 +37,7 @@ ROLES: dict[str, dict] = {
     "senior-engineer": {
         "version": ROLE_VERSION,
         "title": "Senior Software Engineer",
+        "name": "Maya Nair",
         "kind": "teammate",
         "allowed_tools": ["read_tasks", "read_test_results", "propose_hint"],
         "system_prompt": (
@@ -47,6 +50,7 @@ ROLES: dict[str, dict] = {
     "qa-engineer": {
         "version": ROLE_VERSION,
         "title": "QA Engineer",
+        "name": "Rohit Das",
         "kind": "teammate",
         "allowed_tools": ["read_test_results", "read_acceptance_criteria", "read_tasks"],
         "system_prompt": (
@@ -58,6 +62,7 @@ ROLES: dict[str, dict] = {
     "scrum-master": {
         "version": ROLE_VERSION,
         "title": "Scrum Master",
+        "name": "Sarah Menon",
         "kind": "teammate",
         "allowed_tools": ["read_sprint", "read_progress", "read_tasks", "record_standup", "flag_blocker"],
         "system_prompt": (
@@ -70,6 +75,7 @@ ROLES: dict[str, dict] = {
     "learning-assistant": {
         "version": ROLE_VERSION,
         "title": "AI Learning Assistant",
+        "name": "Ava",
         "kind": "assistant",
         "allowed_tools": ["read_progress", "propose_hint"],
         "system_prompt": (
