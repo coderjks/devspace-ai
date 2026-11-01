@@ -5,7 +5,14 @@ import { AppShell } from "@/components/app-shell";
 import { TeamChat } from "@/components/team-chat";
 import { api } from "@/lib/api";
 
-type Me = { email: string };
+type Me = { email: string; full_name: string | null };
+
+function displayName(me: Me | null): string {
+  const first = me?.full_name?.trim().split(/\s+/)[0];
+  if (first) return first;
+  if (me?.email) return me.email.split("@")[0];
+  return "You";
+}
 
 export default function TeamPage() {
   const [me, setMe] = useState<Me | null>(null);
@@ -21,7 +28,7 @@ export default function TeamPage() {
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         Five AI teammates plus a separate Learning Assistant. Pick a teammate on the left — their chat loads on the right.
       </p>
-      <TeamChat youName={me?.email ? me.email.split("@")[0] : "You"} />
+      <TeamChat youName={displayName(me)} />
     </AppShell>
   );
 }
