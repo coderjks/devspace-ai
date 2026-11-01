@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AudioLines, Mic, MicOff, PencilLine, Send, Square, X } from "lucide-react";
 import { VoiceWaveform } from "@/components/voice/voice-waveform";
+import { API_BASE } from "@/lib/utils";
 import { blobToWav16k } from "@/lib/audio-to-wav";
 import { useProviderStatus } from "@/lib/provider-status";
 import { STT_UNAVAILABLE_MSG } from "@/components/voice/use-voice-answer";
@@ -149,7 +150,7 @@ export default function VoicePage() {
       if (!wav) throw new Error("Could not prepare the recording for transcription — use Type mode.");
       const form = new FormData();
       form.append("audio", wav, "turn.wav");
-      const res = await fetch(`/api/voice/sessions/${sessionId}/turns`, {
+      const res = await fetch(`${API_BASE}/api/voice/sessions/${sessionId}/turns`, {
         method: "POST",
         body: form,
         credentials: "include",
