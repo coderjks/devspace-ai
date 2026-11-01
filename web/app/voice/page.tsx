@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AudioLines, ClipboardCheck, MessagesSquare, Mic, MicOff, PencilLine, Send, Square, X } from "lucide-react";
+import { VoiceWaveform } from "@/components/voice/voice-waveform";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -53,6 +54,7 @@ export default function VoicePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [micBlocked, setMicBlocked] = useState(false);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [overlay, setOverlay] = useState(false);
   const [editing, setEditing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -127,6 +129,7 @@ export default function VoicePage() {
     rec.onstop = () => upload(new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" }));
     recorderRef.current = rec;
     rec.start();
+    setMicStream(stream);
     setRecording(true);
     setRecSecs(0);
     timerRef.current = window.setInterval(() => setRecSecs((s) => s + 1), 1000);
@@ -136,6 +139,7 @@ export default function VoicePage() {
     recorderRef.current?.stop();
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
     if (timerRef.current) window.clearInterval(timerRef.current);
+    setMicStream(null);
     setRecording(false);
   }
 
@@ -316,17 +320,25 @@ export default function VoicePage() {
                   <Button variant={mode === "type" ? "default" : "outline"} size="sm" onClick={() => setMode("type")}>Type</Button>
                 </div>
                 {mode === "speak" ? (
-                  <div className="flex items-center gap-3">
-                    {!recording ? (
-                      <Button onClick={startRecording} disabled={busy} aria-label="Start recording">
-                        <Mic size={16} aria-hidden /> Record {micBlocked ? "(blocked)" : ""}
-                      </Button>
-                    ) : (
-                      <Button variant="secondary" onClick={stopRecording} aria-label="Stop recording">
-                        <Square size={16} aria-hidden /> Stop ({recSecs}s)
-                      </Button>
-                    )}
-                    {busy ? <LoadingStatus label="Transcribing…" /> : null}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      {!recording ? (
+                        <Button onClick={startRecording} disabled={busy} aria-label="Start recording">
+                          <Mic size={16} aria-hidden /> Record {micBlocked ? "(blocked)" : ""}
+                        </Button>
+                      ) : (
+                        <Button variant="destructive" onClick={stopRecording} aria-label="Stop recording" aria-pressed="true">
+                          <Square size={16} aria-hidden fill="currentColor" /> Stop&nbsp;<span className="tabular-nums">({recSecs}s)</span>
+                        </Button>
+                      )}
+                      {busy && !recording ? <LoadingStatus label="Transcribing…" /> : null}
+                    </div>
+                    {recording ? (
+                      <div className="flex items-center gap-3 rounded-lg bg-destructive/[0.06] px-3 py-2" role="status">
+                        <VoiceWaveform stream={micStream} bars={32} className="flex-1 text-destructive" />
+                        <span className="shrink-0 text-xs font-medium text-muted-foreground">You&apos;re being heard — tap Stop to transcribe.</span>
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 sm:flex-row">
@@ -436,25 +448,32 @@ export default function VoicePage() {
                 onClick={() => (recording ? stopRecording() : void startRecording())}
                 disabled={busy && !recording}
                 aria-label={recording ? "Stop talking" : "Tap to talk"}
-                className="relative flex h-28 w-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lift transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className={`relative flex h-28 w-28 items-center justify-center rounded-full shadow-lift transition-all duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                  recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"
+                }`}
               >
                 {recording ? (
                   <>
-                    <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-primary/40" />
-                    <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-primary/20 [animation-delay:0.5s]" />
+                    <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-destructive/40" />
+                    <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-destructive/20 [animation-delay:0.5s]" />
                   </>
                 ) : null}
-                {recording ? <Square size={30} aria-hidden /> : <Mic size={30} aria-hidden />}
+                {recording ? <Square size={30} aria-hidden fill="currentColor" /> : <Mic size={30} aria-hidden />}
               </button>
-              <p role="status" className="mt-4 text-sm font-medium">
-                {recording
-                  ? `Listening… (${recSecs}s) — tap to finish`
-                  : busy
+              {recording ? (
+                <div className="mt-4 w-64" role="status" aria-label="Live voice levels">
+                  <VoiceWaveform stream={micStream} bars={36} className="text-destructive" />
+                  <p className="mt-1 text-center text-sm font-medium tabular-nums">{recSecs}s — tap the orb to finish</p>
+                </div>
+              ) : (
+                <p role="status" className="mt-4 text-sm font-medium">
+                  {busy
                     ? "Working…"
                     : activeTurn && !result
                       ? "Review the transcript, edit if needed, then submit"
                       : "Tap the orb and speak"}
-              </p>
+                </p>
+              )}
               <p className="mt-1 text-xs text-muted-foreground">Nothing is recorded until you submit.</p>
             </div>
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">

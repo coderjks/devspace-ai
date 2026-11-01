@@ -13,6 +13,7 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
   const [consented, setConsented] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [recordingKey, setRecordingKey] = useState<string | null>(null);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [secs, setSecs] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
     if (timerRef.current) window.clearInterval(timerRef.current);
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
     setRecordingKey(null);
+    setMicStream(null);
     keyRef.current = null;
   }, []);
 
@@ -110,6 +112,7 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
       recorderRef.current = rec;
       keyRef.current = key;
       rec.start();
+      setMicStream(stream);
       setRecordingKey(key);
       setSecs(0);
       timerRef.current = window.setInterval(() => setSecs((s) => s + 1), 1000);
@@ -117,5 +120,5 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
     [recordingKey, sessionId, upload]
   );
 
-  return { consented, setConsented, recordingKey, secs, busy, error, toggleRecord, stopTracks };
+  return { consented, setConsented, recordingKey, micStream, secs, busy, error, toggleRecord, stopTracks };
 }

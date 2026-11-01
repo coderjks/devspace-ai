@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useVoiceAnswer } from "@/components/voice/use-voice-answer";
+import { VoiceWaveform } from "@/components/voice/voice-waveform";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
@@ -256,7 +257,7 @@ export default function StandupPage() {
                     />
                     <Button
                       type="button"
-                      variant={recording ? "secondary" : "outline"}
+                      variant={recording ? "destructive" : "outline"}
                       size="sm"
                       disabled={voice.busy && !recording}
                       onClick={() => {
@@ -269,14 +270,19 @@ export default function StandupPage() {
                       aria-label={recording ? `Stop dictating ${label}` : `Dictate ${label} by voice`}
                       aria-pressed={recording}
                       title={recording ? "Stop and transcribe" : "Dictate by voice"}
+                      className={recording ? "border-destructive" : undefined}
                     >
-                      {recording ? <Square size={15} aria-hidden /> : <Mic size={15} aria-hidden />}
+                      {recording ? <Square size={15} aria-hidden fill="currentColor" /> : <Mic size={15} aria-hidden />}
+                      {recording ? <span className="tabular-nums">{voice.secs}s</span> : null}
                     </Button>
                   </div>
                   {recording ? (
-                    <p role="status" className="mt-1 text-xs text-muted-foreground">
-                      Listening… ({voice.secs}s) tap again to stop and transcribe. Edit the text before reviewing.
-                    </p>
+                    <div className="mt-2 flex items-center gap-3 rounded-lg bg-destructive/[0.06] px-3 py-2" role="status">
+                      <VoiceWaveform stream={voice.micStream} bars={28} className="flex-1 text-destructive" />
+                      <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                        Tap <Square size={11} aria-hidden className="inline" fill="currentColor" /> to transcribe — edit before reviewing.
+                      </span>
+                    </div>
                   ) : null}
                 </div>
                 );
