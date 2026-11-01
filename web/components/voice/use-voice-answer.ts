@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API_BASE } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { api, authHeaders } from "@/lib/api";
 import { blobToWav16k } from "@/lib/audio-to-wav";
 import { useProviderStatus } from "@/lib/provider-status";
 
@@ -68,6 +68,7 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
           method: "POST",
           body: form,
           credentials: "include",
+          headers: { ...authHeaders() },
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail ?? `Upload failed (${res.status})`);
         const turn = (await res.json()) as { transcript: string };

@@ -13,7 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { AppShell } from "@/components/app-shell";
-import { api } from "@/lib/api";
+import { api, authHeaders } from "@/lib/api";
 
 type Persona = "scrum-master" | "tech-lead";
 
@@ -153,6 +153,7 @@ export default function VoicePage() {
         method: "POST",
         body: form,
         credentials: "include",
+        headers: { ...authHeaders() },
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail ?? `Upload failed (${res.status})`);
       const turn = (await res.json()) as Turn;
