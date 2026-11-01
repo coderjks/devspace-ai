@@ -316,3 +316,17 @@ Verification (observed, not assumed):
 - `ruff check app` (project config) + `mypy app` (49 files) — clean. Two remaining `tests/` lint notes (`F401 Task`, `F841 sub`) pre-exist at HEAD; dead `Task` import removed.
 - Fresh-DB `alembic upgrade head` + seed — clean; template statuses confirmed.
 - Live on :8000: two fresh registrations both see `AI-001 todo`/rest `locked`; A moves AI-001 → `in_progress`, B still `todo`. Probe users removed afterwards.
+
+---
+
+## 12. Chat identity, voice/chat polish, Growth merge, certificates, UI (2026-11-01, branch `feat/chat-identity`)
+
+Chat shows teammate names with DiceBear avatars (first-name only for the student); sidebar footer drops the email; profile editing consolidated to one save. Mic dictation available on every teammate chat with transcribing loader state; consent checkbox persists. Standup keeps per-answer dictation plus conversation-mode overlay; first-tap mic race fixed.
+
+Learning page removed (check-in/retro folded into Growth); progression + progress merged; Growth cards uniform with animated sprint bar and aligned feedback widths; dashboard rebalanced. Board tickets carry per-status stripe colors. Humanized Title Case labels across pages; markdown chat rendering; markdown removed from system copy.
+
+Certificates (all six tickets approved): `certificates` table + migration `c8d9e0f1a2b3`, signed `code.signature` credential, `GET /api/certificates/{me,issue}` + public `/verify/{code}`, printable college-style sheet with QR (`qrcode` dep), dashboard banner + Growth card. Verified live: issue → QR scan-path → forged-code reject; demo + graduate accounts green.
+
+Evaluation visibility: report page polls every 5s until the worker's evaluation lands ("Evaluation in progress"); "Review report" links on board cards (both views), ticket submission rows, and the GitHub PR list. Repo linking accepts pasted `github.com/owner/repo/...` URLs, normalized to canonical `owner/repo` (`parse_repo_ref`; non-github hosts rejected). Standup redesigned: gradient hero with streak + check-in stats, per-question cards with multi-line answers and red `*` required markers, review timeline, timeline history rail.
+
+Verification: `pytest tests/api` green (incl. new certificate, URL-normalization, and per-user isolation tests), `ruff` + `mypy` clean, web `tsc` + `next build` clean, headless-Chrome screenshots (light + form flows), probe users/data removed after each live check.
