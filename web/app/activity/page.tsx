@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
+import { dayLabel, describeEvent, type FeedEvent } from "@/lib/activity-feed";
 
 type Standup = {
   id: string;
@@ -63,40 +64,9 @@ function personaLabel(persona: string): string {
   return persona.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-function dayLabel(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "Unknown date";
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
-}
-
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-/** Best-effort human sentence for a raw system event. Unknown actions fall
- * back to a prettified action name rather than raw `snake.case` internals. */
-function describeEvent(e: SystemEvent): string {
-  const actor = e.actor ?? "";
-  if (e.action === "agent_reply" && actor.startsWith("agent:")) {
-    return `${personaLabel(actor.slice("agent:".length))} replied in chat`;
-  }
-  const sentences: Record<string, string> = {
-    "enrollment.created": "You enrolled in the internship",
-    "standup.proposed": "You drafted a standup",
-    "standup.confirmed": "You confirmed a standup",
-    "task.transition": e.object_id ? `Task ${e.object_id} changed status` : "A task changed status",
-    "password.changed": "You changed your password",
-    "enrollment.skill_updated": "You updated your skill level",
-    "evaluation.completed": "An evaluation finished",
-    "submission.created": "You submitted a pull request",
-  };
-  return sentences[e.action] ?? e.action.replace(/[._]/g, " ");
 }
 
 export default function ActivityPage() {
@@ -169,7 +139,7 @@ export default function ActivityPage() {
               </CardHeader>
               <CardContent>
                 {(() => {
-                  const groups = new Map<string, SystemEvent[]>();
+                  const groups = new Map<string, FeedEvent[]>();
                   for (const e of feed.system_events.slice(0, 20)) {
                     const day = dayLabel(e.created_at);
                     if (!groups.has(day)) groups.set(day, []);

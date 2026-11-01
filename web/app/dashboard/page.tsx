@@ -2,21 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarCheck,
-  GitPullRequest,
-  KanbanSquare,
-  Mic,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, CircleDashed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
+import { describeEvent, isToday, type FeedEvent } from "@/lib/activity-feed";
 
 type Task = { id: string; key: string; title: string; status: string };
 type Project = { id: string; name: string; description: string; sprint: { name: string; tasks: Task[] } | null };
@@ -24,27 +17,16 @@ type Me = { id: string; email: string; full_name: string };
 type Enrollment = { id: string; track: string; status: string };
 type RecentEvent = { action: string; object_type: string; object_id: string; created_at: string };
 type Progress = { total_tasks: number; started_tasks: number; completed_tasks: number; recent_events: RecentEvent[] };
-
-function formatEventTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-}
-
-const QUICK_LINKS = [
-  { href: "/board", label: "Board", icon: KanbanSquare },
-  { href: "/standup", label: "Standup", icon: CalendarCheck },
-  { href: "/team", label: "Team", icon: Users },
-  { href: "/github", label: "GitHub", icon: GitPullRequest },
-  { href: "/voice", label: "Voice", icon: Mic },
-  { href: "/progression", label: "Growth", icon: TrendingUp },
-];
+type Standup = { id: string; status: string; created_at: string };
+type Submission = { id: string; task_key: string | null };
 
 export default function DashboardPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [enrolled, setEnrolled] = useState<boolean | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
+  const [standupDone, setStandupDone] = useState<boolean | null>(null);
+  const [prCount, setPrCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,12 +35,16 @@ export default function DashboardPage() {
       api<Project>("/api/projects/current"),
       api<Enrollment[]>("/api/enrollments/me"),
       api<Progress>("/api/progress"),
+      api<Standup[]>("/api/standups").catch(() => [] as Standup[]),
+      api<Submission[]>("/api/submissions").catch(() => [] as Submission[]),
     ])
-      .then(([meData, projData, enrollments, prog]) => {
+      .then(([meData, projData, enrollments, prog, standups, subs]) => {
         setMe(meData);
         setProject(projData);
         setEnrolled(enrollments.length > 0);
         setProgress(prog);
+        setStandupDone(standups.some((s) => s.status === "confirmed" && isToday(s.created_at)));
+        setPrCount(subs.length);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
   }, []);
@@ -113,10 +99,12 @@ export default function DashboardPage() {
 
   const tasks = project.sprint?.tasks ?? [];
   const nextTask = tasks.find((t) => t.status === "in_progress") ?? tasks.find((t) => t.status === "todo") ?? null;
-  const recentEvents = progress?.recent_events ?? [];
+  const recentEvents = (progress?.recent_events ?? []) as FeedEvent[];
   const total = progress?.total_tasks ?? tasks.length;
   const done = progress?.completed_tasks ?? 0;
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const active = progress?.started_tasks ?? 0;
+  const donePct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const activePct = total > 0 ? Math.round((active / total) * 100) : 0;
 
   return (
     <AppShell email={me.email}>
@@ -127,6 +115,17 @@ export default function DashboardPage() {
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Welcome, {me.full_name || me.email}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{project.name} — {project.sprint?.name}</p>
         </div>
+        {standupDone === true ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 size={14} aria-hidden /> Standup done
+          </span>
+        ) : standupDone === false ? (
+          <Button size="sm" asChild>
+            <Link href="/standup">
+              Write today&apos;s standup <ArrowRight size={14} aria-hidden />
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       {/* Slim next-up banner */}
@@ -166,14 +165,15 @@ export default function DashboardPage() {
               </Button>
             </div>
             <div
-              className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary"
+              className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-secondary"
               role="progressbar"
-              aria-valuenow={pct}
+              aria-valuenow={donePct}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={`${pct}% of sprint tasks approved`}
+              aria-label={`${donePct}% approved, ${activePct}% in progress`}
             >
-              <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
+              <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${donePct}%` }} />
+              <div className="h-full rounded-full bg-primary/35 transition-all duration-300" style={{ width: `${activePct}%` }} />
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -205,8 +205,8 @@ export default function DashboardPage() {
             <CardContent className="grid grid-cols-3 divide-x divide-border p-0">
               {[
                 { value: progress?.total_tasks ?? "—", label: "Tasks", href: "/board" },
-                { value: progress?.started_tasks ?? "—", label: "Active", href: "/progression" },
-                { value: progress?.completed_tasks ?? "—", label: "Approved", href: "/roadmap" },
+                { value: progress?.started_tasks ?? "—", label: "Active", href: "/board" },
+                { value: progress?.completed_tasks ?? "—", label: "Approved", href: "/progression" },
               ].map((s) => (
                 <Link key={s.label} href={s.href} className="group px-3 py-3 text-center transition-colors duration-150 hover:bg-muted/50 first:rounded-l-xl last:rounded-r-xl">
                   <p className="text-xl font-extrabold tabular-nums leading-none">{s.value}</p>
@@ -216,19 +216,59 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Quick links */}
+          {/* Today checklist */}
           <Card>
-            <CardContent className="grid grid-cols-3 gap-1.5 p-3">
-              {QUICK_LINKS.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="flex flex-col items-center gap-1 rounded-lg px-2 py-2.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent/60 hover:text-foreground"
-                >
-                  <Icon size={17} aria-hidden />
-                  {label}
-                </Link>
-              ))}
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Today</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ul className="space-y-1">
+                <li>
+                  <Link
+                    href="/standup"
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-muted/50"
+                  >
+                    {standupDone ? (
+                      <CheckCircle2 size={16} aria-hidden className="shrink-0 text-emerald-500" />
+                    ) : (
+                      <CircleDashed size={16} aria-hidden className="shrink-0 text-muted-foreground" />
+                    )}
+                    <span className={standupDone ? "text-muted-foreground" : "font-medium"}>
+                      {standupDone ? "Standup confirmed" : "Write today's standup"}
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={nextTask ? `/tasks/${nextTask.id}` : "/progression"}
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-muted/50"
+                  >
+                    {nextTask ? (
+                      <CircleDashed size={16} aria-hidden className="shrink-0 text-muted-foreground" />
+                    ) : (
+                      <CheckCircle2 size={16} aria-hidden className="shrink-0 text-emerald-500" />
+                    )}
+                    <span className={nextTask ? "font-medium" : "text-muted-foreground"}>
+                      {nextTask ? `Continue ${nextTask.key}` : "All caught up"}
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/github"
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-muted/50"
+                  >
+                    {prCount !== null && prCount > 0 ? (
+                      <CheckCircle2 size={16} aria-hidden className="shrink-0 text-emerald-500" />
+                    ) : (
+                      <CircleDashed size={16} aria-hidden className="shrink-0 text-muted-foreground" />
+                    )}
+                    <span className={prCount !== null && prCount > 0 ? "text-muted-foreground" : "font-medium"}>
+                      {prCount !== null && prCount > 0 ? `${prCount} PR${prCount === 1 ? "" : "s"} submitted` : "Submit your first PR"}
+                    </span>
+                  </Link>
+                </li>
+              </ul>
             </CardContent>
           </Card>
 
@@ -243,11 +283,8 @@ export default function DashboardPage() {
               ) : (
                 <ul className="divide-y divide-border">
                   {recentEvents.slice(0, 4).map((e, i) => (
-                    <li key={`${e.created_at}-${i}`} className="py-2">
-                      <p className="truncate text-sm font-medium">{e.action}</p>
-                      <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                        {e.object_type} · {formatEventTime(e.created_at)}
-                      </p>
+                    <li key={`${e.created_at}-${i}`} className="truncate py-2 text-sm font-medium">
+                      {describeEvent(e)}
                     </li>
                   ))}
                 </ul>
