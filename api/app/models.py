@@ -77,6 +77,7 @@ class User(Base):
     activity_events: Mapped[list["ActivityEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     standups: Mapped[list["Standup"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     repositories: Mapped[list["Repository"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    certificates: Mapped[list["Certificate"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Enrollment(Base):
@@ -411,3 +412,27 @@ class WebhookDelivery(Base):
     processed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class Certificate(Base):
+    """Completion certificate (per-student, at most one).
+
+    Issued when every sprint ticket is approved. The public credential is
+    ``code.signature`` where signature is HMAC(secret, code): verification
+    recomputes the signature, so forged or mistyped codes fail closed without
+    a database lookup. Skills and the recipient name are snapshotted at issue
+    time so later profile edits cannot rewrite history.
+    """
+
+    __tablename__ = "certificates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    track: Mapped[str] = mapped_column(String(100), nullable=False, default="applied-ai-engineering")
+    recipient_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    skills: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="certificates")
