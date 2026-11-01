@@ -53,10 +53,15 @@ cmd_start() {
   if is_up "http://127.0.0.1:${API_PORT}/health"; then
     echo "api already running on :$API_PORT — leaving it alone"
   else
-    (cd "$ROOT/api" && DATABASE_URL="$DATABASE_URL" REDIS_URL="$REDIS_URL" \
-      CORS_ORIGINS="http://localhost:${WEB_PORT},http://127.0.0.1:${WEB_PORT}" \
-      LLM_PROVIDER="${LLM_PROVIDER:-mock}" \
-      MODEL_API_KEY="${MODEL_API_KEY:-}" MODEL_ID="${MODEL_ID:-}" \
+    # Forward model settings only when exported in the shell. When unset,
+    # they are intentionally omitted so api/.env (pydantic env_file) can
+    # supply them instead — an explicit empty value would shadow the file.
+    API_ENV=(DATABASE_URL="$DATABASE_URL" REDIS_URL="$REDIS_URL"
+      CORS_ORIGINS="http://localhost:${WEB_PORT},http://127.0.0.1:${WEB_PORT}")
+    for v in LLM_PROVIDER MODEL_API_KEY MODEL_ID MODEL_API_BASE_URL; do
+      if [ -n "${!v:-}" ]; then API_ENV+=("$v=${!v}"); fi
+    done
+    (cd "$ROOT/api" && env "${API_ENV[@]}" \
       ../.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port "$API_PORT" \
       >>"$API_LOG" 2>&1 &) 
     for _ in $(seq 1 30); do is_up "http://127.0.0.1:${API_PORT}/health" && break; sleep 1; done
