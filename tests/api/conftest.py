@@ -3,6 +3,9 @@ import sys
 from pathlib import Path
 
 # Use SQLite for tests and set env BEFORE importing the app.
+# Force the mock provider so a developer's local api/.env
+# (e.g. LLM_PROVIDER=meta) can never leak live-model config into the suite.
+os.environ["LLM_PROVIDER"] = "mock"
 os.environ["DATABASE_URL"] = "sqlite+pysqlite:///:memory:"
 os.environ["DATABASE_URL_UNPOOLED"] = ""
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-at-least-32-characters-long!!"
