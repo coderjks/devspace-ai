@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ClipboardCheck, MessagesSquare, Mic, MicOff, PencilLine, Send, Square } from "lucide-react";
+import { AudioLines, ClipboardCheck, MessagesSquare, Mic, MicOff, PencilLine, Send, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -53,6 +53,9 @@ export default function VoicePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [micBlocked, setMicBlocked] = useState(false);
+  const [overlay, setOverlay] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
@@ -74,6 +77,18 @@ export default function VoicePage() {
     if (timerRef.current) window.clearInterval(timerRef.current);
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
   }, []);
+
+  useEffect(() => {
+    setEditing(false);
+  }, [activeTurn?.id]);
+
+  useEffect(() => {
+    if (result?.audio_wav_base64 && audioRef.current) {
+      audioRef.current.play().catch(() => {
+        /* autoplay blocked — the visible audio controls are the fallback */
+      });
+    }
+  }, [result]);
 
   const startSession = useCallback(async () => {
     setBusy(true);
@@ -270,7 +285,15 @@ export default function VoicePage() {
             {!sessionId ? (
               <Button onClick={startSession} disabled={busy || !consent}>Start voice session</Button>
             ) : (
-              <p className="text-sm text-muted-foreground">Session active — record or type below. <Button variant="ghost" size="sm" onClick={() => setSessionId(null)}>End</Button></p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm text-muted-foreground">Session active — record or type below.</p>
+                {goal === "discuss" ? (
+                  <Button variant="default" size="sm" onClick={() => setOverlay(true)}>
+                    <AudioLines size={15} aria-hidden /> Conversation mode
+                  </Button>
+                ) : null}
+                <Button variant="ghost" size="sm" onClick={() => setSessionId(null)}>End</Button>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -396,6 +419,92 @@ export default function VoicePage() {
           )
         )}
       </div>
+      {overlay && sessionId ? (
+        <div role="dialog" aria-modal="true" aria-label={`Voice conversation with ${persona === "tech-lead" ? "Tech Lead" : "Scrum Master"}`} className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur animate-fade-in">
+          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-8">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                {persona === "tech-lead" ? "Tech Lead" : "Scrum Master"} · conversation mode
+              </p>
+              <Button variant="ghost" size="sm" onClick={() => setOverlay(false)} aria-label="Close conversation mode">
+                <X size={17} aria-hidden />
+              </Button>
+            </div>
+            <div className="flex flex-col items-center py-8">
+              <button
+                type="button"
+                onClick={() => (recording ? stopRecording() : void startRecording())}
+                disabled={busy && !recording}
+                aria-label={recording ? "Stop talking" : "Tap to talk"}
+                className="relative flex h-28 w-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lift transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {recording ? (
+                  <>
+                    <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-primary/40" />
+                    <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-primary/20 [animation-delay:0.5s]" />
+                  </>
+                ) : null}
+                {recording ? <Square size={30} aria-hidden /> : <Mic size={30} aria-hidden />}
+              </button>
+              <p role="status" className="mt-4 text-sm font-medium">
+                {recording
+                  ? `Listening… (${recSecs}s) — tap to finish`
+                  : busy
+                    ? "Working…"
+                    : activeTurn && !result
+                      ? "Review the transcript, edit if needed, then submit"
+                      : "Tap the orb and speak"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Nothing is recorded until you submit.</p>
+            </div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
+              {activeTurn ? (
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    You {activeTurn.stt_mock ? "(mock transcription)" : ""} ·{" "}
+                    <button type="button" onClick={() => setEditing((v) => !v)} className="font-medium text-primary hover:underline">
+                      {editing ? "Done editing" : "Edit"}
+                    </button>
+                  </p>
+                  {editing ? (
+                    <textarea
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      rows={3}
+                      aria-label="Edit transcript"
+                      className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm leading-6">{draft || activeTurn.transcript}</p>
+                  )}
+                  <Button onClick={submitTurn} disabled={busy || !draft.trim()} size="sm" className="mt-3">
+                    <Send size={14} aria-hidden /> Submit
+                  </Button>
+                </div>
+              ) : null}
+              {result ? (
+                <div className="rounded-2xl border border-primary/25 bg-primary/[0.04] p-4" aria-live="polite">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {persona === "tech-lead" ? "Tech Lead" : "Scrum Master"} replies{result.reply_mock ? " (mock, advisory)" : ""}
+                  </p>
+                  <p className="mt-1 text-sm leading-6">{result.reply_text}</p>
+                  {result.audio_wav_base64 ? (
+                    <audio ref={audioRef} controls src={`data:audio/wav;base64,${result.audio_wav_base64}`} className="mt-2 w-full">
+                      Audio playback not supported — read the reply text above.
+                    </audio>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">No audio synthesized — text reply above is the fallback.</p>
+                  )}
+                  <p className="mt-2 text-xs">
+                    <Link href={`/team/${persona}`} className="font-medium text-primary hover:underline">Continue in text chat →</Link>
+                  </p>
+                </div>
+              ) : null}
+            </div>
+            {error ? <p role="alert" className="pb-2 text-sm text-destructive">{error}</p> : null}
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
 }

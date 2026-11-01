@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useVoiceAnswer } from "@/components/voice/use-voice-answer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +43,11 @@ export default function StandupPage() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [wantMic, setWantMic] = useState(false);
+  const voice = useVoiceAnswer((key, text) => {
+    const i = Number(key.slice(1));
+    setAnswers((a) => a.map((v, j) => (j === i ? (v ? `${v} ${text}` : text) : v)));
+  });
 
   useEffect(() => {
     Promise.all([api<{ email: string }>("/api/auth/me"), api<{ tasks: SprintTask[] }>("/api/sprints/current")])
@@ -215,20 +221,67 @@ export default function StandupPage() {
                   ))}
                 </select>
               </div>
-              {STEPS.map((label, i) => (
+              {!voice.consented && wantMic ? (
+                <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                  <label className="flex cursor-pointer items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={voice.consented}
+                      onChange={(e) => voice.setConsented(e.target.checked)}
+                      className="mt-1"
+                    />
+                    <span>
+                      I consent to voice processing for this standup. Transcripts are stored and editable;
+                      raw audio is never stored.
+                    </span>
+                  </label>
+                </div>
+              ) : null}
+              {STEPS.map((label, i) => {
+                const key = `q${i}`;
+                const recording = voice.recordingKey === key;
+                return (
                 <div key={label}>
                   <label htmlFor={`standup-${i}`} className="text-sm font-medium">
                     {i + 1}. {label} {i < 2 ? null : <span className="font-normal text-muted-foreground">(optional)</span>}
                   </label>
-                  <Input
-                    id={`standup-${i}`}
-                    value={answers[i]}
-                    onChange={(e) => setAnswers((a) => a.map((v, j) => (j === i ? e.target.value : v)))}
-                    placeholder={i === 0 ? "What did you finish?" : i === 1 ? "What is next?" : "Anything blocking you?"}
-                    maxLength={2000}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id={`standup-${i}`}
+                      value={answers[i]}
+                      onChange={(e) => setAnswers((a) => a.map((v, j) => (j === i ? e.target.value : v)))}
+                      placeholder={i === 0 ? "What did you finish?" : i === 1 ? "What is next?" : "Anything blocking you? Type or dictate."}
+                      maxLength={2000}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant={recording ? "secondary" : "outline"}
+                      size="sm"
+                      disabled={voice.busy && !recording}
+                      onClick={() => {
+                        if (!voice.consented) {
+                          setWantMic(true);
+                          return;
+                        }
+                        void voice.toggleRecord(key);
+                      }}
+                      aria-label={recording ? `Stop dictating ${label}` : `Dictate ${label} by voice`}
+                      aria-pressed={recording}
+                      title={recording ? "Stop and transcribe" : "Dictate by voice"}
+                    >
+                      {recording ? <Square size={15} aria-hidden /> : <Mic size={15} aria-hidden />}
+                    </Button>
+                  </div>
+                  {recording ? (
+                    <p role="status" className="mt-1 text-xs text-muted-foreground">
+                      Listening… ({voice.secs}s) tap again to stop and transcribe. Edit the text before reviewing.
+                    </p>
+                  ) : null}
                 </div>
-              ))}
+                );
+              })}
+              {voice.error ? <p role="alert" className="text-sm text-destructive">{voice.error}</p> : null}
               {fieldError ? <p role="alert" className="text-sm text-destructive">{fieldError}</p> : null}
               <Button type="submit" disabled={busy} aria-busy={busy}>
                 {busy ? <><Loader2 size={16} aria-hidden className="animate-spin" /> Saving…</> : "Review standup"}
