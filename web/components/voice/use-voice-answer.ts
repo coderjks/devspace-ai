@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API_BASE } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { blobToWav16k } from "@/lib/audio-to-wav";
 import { useProviderStatus } from "@/lib/provider-status";
 
 export const STT_UNAVAILABLE_MSG =
@@ -59,8 +60,10 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
       setBusy(true);
       setError(null);
       try {
+        const wav = await blobToWav16k(blob).catch(() => null);
+        if (!wav) throw new Error("Could not prepare the recording for transcription — type instead.");
         const form = new FormData();
-        form.append("audio", blob, "turn.webm");
+        form.append("audio", wav, "turn.wav");
         const res = await fetch(`${API_BASE}/api/voice/sessions/${sid}/turns`, {
           method: "POST",
           body: form,

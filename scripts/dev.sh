@@ -58,7 +58,7 @@ cmd_start() {
     # supply them instead — an explicit empty value would shadow the file.
     API_ENV=(DATABASE_URL="$DATABASE_URL" REDIS_URL="$REDIS_URL"
       CORS_ORIGINS="http://localhost:${WEB_PORT},http://127.0.0.1:${WEB_PORT}")
-    for v in LLM_PROVIDER MODEL_API_KEY MODEL_ID MODEL_API_BASE_URL; do
+    for v in LLM_PROVIDER MODEL_API_KEY MODEL_ID MODEL_API_BASE_URL STT_PROVIDER STT_API_KEY STT_MODEL; do
       if [ -n "${!v:-}" ]; then API_ENV+=("$v=${!v}"); fi
     done
     (cd "$ROOT/api" && env "${API_ENV[@]}" \

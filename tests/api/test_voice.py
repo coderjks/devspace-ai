@@ -1,11 +1,10 @@
 """Phase 08: consent, personas, audio validation, STT/TTS mocks, continuity."""
 
-import io
 
 import pytest
-
 from app.voice.providers import (
     MOCK_FIXTURE_MARKER,
+    MetaSTT,
     MockSTT,
     MockTTS,
     VoiceProviderError,
@@ -78,6 +77,53 @@ def test_mock_tts_returns_valid_wav():
     wav, is_mock = MockTTS().synthesize("hello there")
     assert is_mock is True
     assert wav_duration_seconds(wav) is not None
+
+
+def test_meta_stt_factory_and_key_fallback():
+    import types
+
+    base = types.SimpleNamespace(
+        stt_api_key="", model_api_key="meta-key", model_api_base_url="https://api.meta.ai/v1", stt_model=""
+    )
+    adapter = get_stt("meta", base)
+    assert isinstance(adapter, MetaSTT)
+    assert adapter._endpoint == "https://api.meta.ai/v1/asr/transcribe"
+    with pytest.raises(VoiceProviderError):
+        get_stt("meta", types.SimpleNamespace(stt_api_key="", model_api_key=""))
+    assert get_stt("meta", base).name == "meta-stt"
+
+
+def test_meta_stt_rejects_non_wav_and_parses_transcript(monkeypatch):
+    import httpx
+
+    wav = make_fixture_wav().split(MOCK_FIXTURE_MARKER)[0]
+    with pytest.raises(VoiceProviderError):
+        MetaSTT("k", "https://api.meta.ai/v1", "m").transcribe(b"not audio", content_type="audio/webm")
+
+    calls = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"sessionId": "s1", "transcript": "  hello world  ", "audioDurationMs": 800, "turns": []}
+
+    def fake_post(url, headers=None, files=None, timeout=None):
+        calls["url"] = url
+        calls["auth"] = headers["Authorization"]
+        calls["parts"] = set(files.keys())
+        return FakeResponse()
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    transcript, is_mock = MetaSTT("meta-key", "https://api.meta.ai/v1", "muse-voice-transcribe-1.0").transcribe(
+        wav, content_type="audio/wav", language_hint="en"
+    )
+    assert transcript == "hello world"
+    assert is_mock is False
+    assert calls["url"] == "https://api.meta.ai/v1/asr/transcribe"
+    assert calls["auth"] == "Bearer meta-key"
+    assert calls["parts"] == {"request", "audio"}
 
 
 def test_upload_validates_audio(client):

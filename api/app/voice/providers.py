@@ -15,10 +15,13 @@ No raw audio is persisted by any adapter.
 from __future__ import annotations
 
 import io
+import json
 import math
 import struct
 import wave
 from typing import Protocol
+
+import httpx
 
 MOCK_FIXTURE_MARKER = b"devspace-test-fixture"
 MOCK_TRANSCRIPT = "Mock transcription of the test fixture: yesterday I set up the repo, today I will build the ticket API, no blockers."
@@ -111,6 +114,56 @@ class LiveSTTStub:
         raise VoiceProviderError("No live STT provider configured (STT_PROVIDER/STT_API_KEY).")
 
 
+LANGUAGE_NAMES = {"en": "English", "hi": "Hindi"}
+
+
+class MetaSTT:
+    """Meta Muse Voice Transcribe via POST {base}/asr/transcribe.
+
+    Push-to-talk: one uploaded clip is one turn. Requires 16/24 kHz mono
+    integer PCM WAV (what the web client encodes from the mic). Follows the
+    public request/response schema at dev.meta.ai/docs/api-reference/voice —
+    do not invent fields.
+    """
+
+    name = "meta-stt"
+
+    def __init__(self, api_key: str, base_url: str, model: str) -> None:
+        self._api_key = api_key
+        self._endpoint = base_url.rstrip("/") + "/asr/transcribe"
+        self._model = model
+
+    def transcribe(self, audio: bytes, *, content_type: str, language_hint: str | None = None) -> tuple[str, bool]:
+        try:
+            with wave.open(io.BytesIO(audio), "rb") as w:
+                if w.getnchannels() != 1 or w.getsampwidth() != 2 or w.getframerate() not in (16000, 24000):
+                    raise VoiceProviderError(
+                        "Meta STT needs 16/24 kHz mono PCM WAV; the web client converts the mic recording automatically."
+                    )
+        except (wave.Error, EOFError, ValueError) as exc:
+            raise VoiceProviderError("Meta STT needs WAV audio; the upload was not a readable WAV file.") from exc
+        request_part: dict[str, object] = {"model": self._model, "audioEncoding": "WAV", "mode": "PUSH_TO_TALK"}
+        if language_hint in LANGUAGE_NAMES:
+            request_part["languageBias"] = [LANGUAGE_NAMES[language_hint]]
+        try:
+            res = httpx.post(
+                self._endpoint,
+                headers={"Authorization": f"Bearer {self._api_key}", "Accept": "application/json"},
+                files={
+                    "request": (None, json.dumps(request_part), "application/json"),
+                    "audio": ("turn.wav", audio, "audio/wav"),
+                },
+                timeout=60,
+            )
+            res.raise_for_status()
+            transcript = res.json().get("transcript", "")
+        except VoiceProviderError:
+            raise
+        except Exception as exc:
+            raise VoiceProviderError(f"Meta STT request failed: {exc}") from exc
+        return (transcript or "").strip(), False
+
+
 class LiveTTSStub:
     """Fail-closed placeholder until a verified TTS provider is wired (Q3)."""
 
@@ -123,6 +176,15 @@ class LiveTTSStub:
 def get_stt(provider_name: str, settings) -> STTProvider:
     if provider_name == "mock":
         return MockSTT()
+    if provider_name == "meta":
+        key = getattr(settings, "stt_api_key", "") or getattr(settings, "model_api_key", "")
+        if not key:
+            raise VoiceProviderError("STT_API_KEY (or MODEL_API_KEY on the same Meta account) is not set.")
+        return MetaSTT(
+            api_key=key,
+            base_url=getattr(settings, "model_api_base_url", "https://api.meta.ai/v1"),
+            model=getattr(settings, "stt_model", "") or "muse-voice-transcribe-1.0",
+        )
     if provider_name == "live":
         if not getattr(settings, "stt_api_key", ""):
             raise VoiceProviderError("STT_API_KEY is not set.")
