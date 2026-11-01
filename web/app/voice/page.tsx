@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AudioLines, ClipboardCheck, MessagesSquare, Mic, MicOff, PencilLine, Send, Square, X } from "lucide-react";
 import { VoiceWaveform } from "@/components/voice/voice-waveform";
+import { useProviderStatus } from "@/lib/provider-status";
+import { STT_UNAVAILABLE_MSG } from "@/components/voice/use-voice-answer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -57,6 +59,8 @@ export default function VoicePage() {
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [overlay, setOverlay] = useState(false);
   const [editing, setEditing] = useState(false);
+  const providerStatus = useProviderStatus();
+  const sttReady = providerStatus ? !providerStatus.stt_mock : null;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -113,6 +117,10 @@ export default function VoicePage() {
   async function startRecording() {
     setError(null);
     setMicBlocked(false);
+    if (sttReady === false) {
+      setError(STT_UNAVAILABLE_MSG);
+      return;
+    }
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -292,7 +300,7 @@ export default function VoicePage() {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm text-muted-foreground">Session active — record or type below.</p>
                 {goal === "discuss" ? (
-                  <Button variant="default" size="sm" onClick={() => setOverlay(true)}>
+                  <Button variant="default" size="sm" onClick={() => setOverlay(true)} disabled={sttReady === false} title={sttReady === false ? STT_UNAVAILABLE_MSG : undefined}>
                     <AudioLines size={15} aria-hidden /> Conversation mode
                   </Button>
                 ) : null}
@@ -323,7 +331,7 @@ export default function VoicePage() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
                       {!recording ? (
-                        <Button onClick={startRecording} disabled={busy} aria-label="Start recording">
+                        <Button onClick={startRecording} disabled={busy || sttReady === false} title={sttReady === false ? STT_UNAVAILABLE_MSG : undefined} aria-label="Start recording">
                           <Mic size={16} aria-hidden /> Record {micBlocked ? "(blocked)" : ""}
                         </Button>
                       ) : (

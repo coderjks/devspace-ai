@@ -112,6 +112,8 @@ class ProviderStatusOut(BaseModel):
     provider: str
     mock: bool
     model: str
+    stt_mock: bool = True
+    tts_mock: bool = True
 
 
 class EnrollmentSkillUpdate(BaseModel):

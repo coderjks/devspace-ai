@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API_BASE } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { useProviderStatus } from "@/lib/provider-status";
+
+export const STT_UNAVAILABLE_MSG =
+  "Voice transcription isn't connected yet (no STT provider). Type instead — your words go through the same review.";
 
 /**
  * Per-answer dictation backed by the real voice pipeline (session → turn →
@@ -23,6 +27,8 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
   const keyRef = useRef<string | null>(null);
   const onTranscriptRef = useRef(onTranscript);
   onTranscriptRef.current = onTranscript;
+  const provider = useProviderStatus();
+  const sttReady = provider ? !provider.stt_mock : null;
 
   useEffect(
     () => () => {
@@ -78,6 +84,10 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
         recorderRef.current?.stop();
         return;
       }
+      if (sttReady === false) {
+        setError(STT_UNAVAILABLE_MSG);
+        return;
+      }
       setError(null);
       let sid = sessionId;
       if (!sid) {
@@ -117,8 +127,8 @@ export function useVoiceAnswer(onTranscript: (key: string, text: string) => void
       setSecs(0);
       timerRef.current = window.setInterval(() => setSecs((s) => s + 1), 1000);
     },
-    [recordingKey, sessionId, upload]
+    [recordingKey, sessionId, sttReady, upload]
   );
 
-  return { consented, setConsented, recordingKey, micStream, secs, busy, error, toggleRecord, stopTracks };
+  return { consented, setConsented, recordingKey, micStream, secs, busy, error, toggleRecord, stopTracks, sttReady };
 }

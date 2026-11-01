@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useVoiceAnswer } from "@/components/voice/use-voice-answer";
+import { STT_UNAVAILABLE_MSG, useVoiceAnswer } from "@/components/voice/use-voice-answer";
 import { VoiceWaveform } from "@/components/voice/voice-waveform";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -259,7 +259,7 @@ export default function StandupPage() {
                       type="button"
                       variant={recording ? "destructive" : "outline"}
                       size="sm"
-                      disabled={voice.busy && !recording}
+                      disabled={(voice.busy && !recording) || voice.sttReady === false}
                       onClick={() => {
                         if (!voice.consented) {
                           setWantMic(true);
@@ -269,7 +269,7 @@ export default function StandupPage() {
                       }}
                       aria-label={recording ? `Stop dictating ${label}` : `Dictate ${label} by voice`}
                       aria-pressed={recording}
-                      title={recording ? "Stop and transcribe" : "Dictate by voice"}
+                      title={voice.sttReady === false ? STT_UNAVAILABLE_MSG : recording ? "Stop and transcribe" : "Dictate by voice"}
                       className={recording ? "border-destructive" : undefined}
                     >
                       {recording ? <Square size={15} aria-hidden fill="currentColor" /> : <Mic size={15} aria-hidden />}
@@ -287,6 +287,9 @@ export default function StandupPage() {
                 </div>
                 );
               })}
+              {voice.sttReady === false && !voice.error ? (
+                <p className="text-sm text-muted-foreground">Voice transcription isn&apos;t connected yet — type your answers below.</p>
+              ) : null}
               {voice.error ? <p role="alert" className="text-sm text-destructive">{voice.error}</p> : null}
               {fieldError ? <p role="alert" className="text-sm text-destructive">{fieldError}</p> : null}
               <Button type="submit" disabled={busy} aria-busy={busy}>

@@ -45,6 +45,8 @@ def provider_status(
         provider=settings.llm_provider,
         mock=not live,
         model=settings.model_id if live else "mock-teammate-v1",
+        stt_mock=settings.stt_provider == "mock",
+        tts_mock=settings.tts_provider == "mock",
     )
 
 
