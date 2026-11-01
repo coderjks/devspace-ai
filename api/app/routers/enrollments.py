@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import ActivityEvent, Enrollment, EnrollmentStatus, User
-from app.schemas import EnrollmentCreate, EnrollmentOut
+from app.schemas import EnrollmentCreate, EnrollmentOut, EnrollmentSkillUpdate
 
 router = APIRouter(tags=["enrollments"])
 
@@ -70,3 +70,36 @@ def get_my_enrollments(
 ) -> list[EnrollmentOut]:
     rows = db.scalars(select(Enrollment).where(Enrollment.user_id == current_user.id)).all()
     return [EnrollmentOut.model_validate(r) for r in rows]
+
+
+@router.patch("/api/enrollments/me", response_model=EnrollmentOut)
+def update_my_enrollment(
+    payload: EnrollmentSkillUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EnrollmentOut:
+    skill_level = payload.skill_level.strip().lower()
+    if skill_level not in ALLOWED_SKILL_LEVELS:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unknown skill level")
+    enrollment = db.scalar(
+        select(Enrollment)
+        .where(Enrollment.user_id == current_user.id)
+        .order_by(Enrollment.created_at.desc())
+    )
+    if enrollment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No enrollment to update")
+    enrollment.skill_level = skill_level
+    db.add(enrollment)
+    db.add(
+        ActivityEvent(
+            user_id=current_user.id,
+            actor=f"user:{current_user.id}",
+            action="enrollment.skill_updated",
+            object_type="enrollment",
+            object_id=enrollment.id,
+            payload={"track": enrollment.track, "skill_level": skill_level},
+        )
+    )
+    db.commit()
+    db.refresh(enrollment)
+    return EnrollmentOut.model_validate(enrollment)

@@ -36,7 +36,6 @@ const NAV = [
   { href: "/help", label: "Help", icon: CircleHelp },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/team", label: "Team", icon: Users },
-  { href: "/profile", label: "Profile", icon: User },
 ];
 
 function isActive(pathname: string | null, href: string): boolean {
@@ -88,11 +87,16 @@ function SidebarContent({ email, onNavigate }: { email?: string; onNavigate?: ()
           );
         })}
       </nav>
-      {email ? (
-        <p className="truncate border-t border-sidebar-border px-3 pt-4 text-xs text-muted-foreground" title={email}>
-          {email}
-        </p>
-      ) : null}
+      <div className="border-t border-sidebar-border px-3 pt-4">
+        <Link
+          href="/profile"
+          onClick={onNavigate}
+          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent/60 hover:text-foreground"
+        >
+          <User size={17} aria-hidden className="shrink-0" />
+          Profile
+        </Link>
+      </div>
     </div>
   );
 }

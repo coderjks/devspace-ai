@@ -10,7 +10,9 @@ import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
 
 type Me = { id: string; email: string; full_name: string };
-type Enrollment = { id: string; track: string; status: string };
+type Enrollment = { id: string; track: string; status: string; skill_level: string };
+
+const SKILL_LEVELS = ["beginner", "intermediate", "advanced"] as const;
 
 export default function ProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
@@ -20,6 +22,16 @@ export default function ProfilePage() {
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSaved, setPwSaved] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [skillLevel, setSkillLevel] = useState<string>("beginner");
+  const [skillError, setSkillError] = useState<string | null>(null);
+  const [skillSaved, setSkillSaved] = useState(false);
+  const [skillSaving, setSkillSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([api<Me>("/api/auth/me"), api<Enrollment[]>("/api/enrollments/me")])
@@ -27,6 +39,7 @@ export default function ProfilePage() {
         setMe(meData);
         setEnrollments(enrollmentData);
         setFullName(meData.full_name ?? "");
+        if (enrollmentData[0]?.skill_level) setSkillLevel(enrollmentData[0].skill_level);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load profile"));
   }, []);
@@ -53,6 +66,56 @@ export default function ProfilePage() {
       setError(e instanceof Error ? e.message : "Could not save profile");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function savePassword() {
+    setPwError(null);
+    setPwSaved(false);
+    if (!currentPassword) {
+      setPwError("Enter your current password.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPwError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError("New passwords do not match.");
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await api<Me>("/api/users/me/password", {
+        method: "PATCH",
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPwSaved(true);
+    } catch (e) {
+      setPwError(e instanceof Error ? e.message : "Could not change password");
+    } finally {
+      setPwSaving(false);
+    }
+  }
+
+  async function saveSkill() {
+    setSkillError(null);
+    setSkillSaved(false);
+    setSkillSaving(true);
+    try {
+      const updated = await api<Enrollment>("/api/enrollments/me", {
+        method: "PATCH",
+        body: JSON.stringify({ skill_level: skillLevel }),
+      });
+      setEnrollments((prev) => (prev ?? []).map((e) => (e.id === updated.id ? updated : e)));
+      setSkillSaved(true);
+    } catch (e) {
+      setSkillError(e instanceof Error ? e.message : "Could not update skill level");
+    } finally {
+      setSkillSaving(false);
     }
   }
 
@@ -105,7 +168,7 @@ export default function ProfilePage() {
                   <div key={e.id} className="flex justify-between gap-4">
                     <dt className="text-muted-foreground">Enrollment</dt>
                     <dd className="text-right font-medium">
-                      {e.track} · {e.status}
+                      {e.track} · {e.status} · {e.skill_level}
                     </dd>
                   </div>
                 ))}
@@ -157,6 +220,111 @@ export default function ProfilePage() {
                 {saved ? <p role="status" className="animate-fade-in text-sm text-success">Saved.</p> : null}
                 <Button onClick={save} disabled={saving}>
                   {saving ? "Saving…" : "Save changes"}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Skill level</CardTitle>
+            <CardDescription>How tasks and hints are calibrated for you.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loading ? (
+              <Skeleton className="h-9 w-full" />
+            ) : (enrollments ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Enroll first — <Link href="/onboarding" className="underline">start onboarding</Link>.
+              </p>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <label htmlFor="skill-level" className="text-sm font-medium">Level</label>
+                  <select
+                    id="skill-level"
+                    value={skillLevel}
+                    onChange={(e) => {
+                      setSkillLevel(e.target.value);
+                      setSkillError(null);
+                      setSkillSaved(false);
+                    }}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {SKILL_LEVELS.map((level) => (
+                      <option key={level} value={level}>
+                        {level.charAt(0).toUpperCase() + level.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {skillError ? <p role="alert" className="text-sm text-destructive">{skillError}</p> : null}
+                {skillSaved ? <p role="status" className="animate-fade-in text-sm text-success">Saved.</p> : null}
+                <Button onClick={saveSkill} disabled={skillSaving}>
+                  {skillSaving ? "Saving…" : "Save level"}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Password</CardTitle>
+            <CardDescription>Use at least 8 characters.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loading ? (
+              <Skeleton className="h-9 w-full" />
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <label htmlFor="current-password" className="text-sm font-medium">Current password</label>
+                  <Input
+                    id="current-password"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      setPwError(null);
+                      setPwSaved(false);
+                    }}
+                    autoComplete="current-password"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="new-password" className="text-sm font-medium">New password</label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setPwError(null);
+                      setPwSaved(false);
+                    }}
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="confirm-password" className="text-sm font-medium">Confirm new password</label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setPwError(null);
+                      setPwSaved(false);
+                    }}
+                    autoComplete="new-password"
+                  />
+                </div>
+                {pwError ? <p role="alert" className="text-sm text-destructive">{pwError}</p> : null}
+                {pwSaved ? <p role="status" className="animate-fade-in text-sm text-success">Password changed.</p> : null}
+                <Button onClick={savePassword} disabled={pwSaving}>
+                  {pwSaving ? "Saving…" : "Change password"}
                 </Button>
               </>
             )}

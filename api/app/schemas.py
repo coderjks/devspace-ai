@@ -103,6 +103,15 @@ class ProfileUpdate(BaseModel):
     full_name: str = Field(min_length=1, max_length=200)
 
 
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class EnrollmentSkillUpdate(BaseModel):
+    skill_level: str = Field(min_length=1, max_length=50)
+
+
 class DiagnosticQuestionOut(BaseModel):
     id: str
     prompt: str
