@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import json
-import re
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -30,6 +29,7 @@ from app.github.security import (
     fetch_pr_head_sha,
     get_installation_token,
     parse_pr_url,
+    parse_repo_ref,
     resolve_task_key,
     verify_fork,
     verify_signature,
@@ -55,7 +55,6 @@ from app.schemas import (
 
 router = APIRouter(tags=["github"])
 
-FULL_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 PR_ACTIONS_UPSERT = {"opened", "reopened", "synchronize"}
 
 
@@ -263,9 +262,9 @@ def link_repo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RepositoryOut:
-    full_name = body.full_name.strip()
-    if not FULL_NAME_RE.match(full_name):
-        raise HTTPException(status_code=422, detail="full_name must look like owner/repo")
+    full_name = parse_repo_ref(body.full_name)
+    if full_name is None:
+        raise HTTPException(status_code=422, detail="Enter owner/repo or paste a github.com repository URL")
     existing = (
         db.query(Repository)
         .filter(Repository.user_id == current_user.id, Repository.full_name == full_name)

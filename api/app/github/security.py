@@ -20,6 +20,7 @@ import jwt
 
 TASK_KEY_RE = re.compile(r"\bAI-(\d{3})\b", re.IGNORECASE)
 PR_URL_RE = re.compile(r"^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$")
+OWNER_REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
 class GithubNotConfigured(Exception):
@@ -51,6 +52,30 @@ def parse_pr_url(url: str) -> tuple[str, str, int] | None:
     if not m:
         return None
     return m.group(1), m.group(2), int(m.group(3))
+
+
+def parse_repo_ref(value: str) -> str | None:
+    """Normalize a repo reference to canonical ``owner/repo`` or return None.
+
+    Accepts a bare ``owner/repo`` or any ``https://github.com/<owner>/<repo>``
+    URL with extra path segments (``/branches``, ``/tree/main``, ``/pull/7``),
+    a trailing slash, or a ``.git`` suffix. Only the github.com host is
+    accepted; anything else returns None so unrelated URLs can never alias a
+    linked repository.
+    """
+    text = value.strip().rstrip("/")
+    if OWNER_REPO_RE.match(text):
+        return text
+    m = re.match(r"^https?://(?:www\.)?github\.com/([^/\s]+)/([^/\s?#]+)", text, re.IGNORECASE)
+    if not m:
+        return None
+    repo = m.group(2)
+    if repo.endswith(".git"):
+        repo = repo[: -len(".git")]
+    full_name = f"{m.group(1)}/{repo}"
+    if not OWNER_REPO_RE.match(full_name):
+        return None
+    return full_name
 
 
 def _read_private_key(path: str) -> str:

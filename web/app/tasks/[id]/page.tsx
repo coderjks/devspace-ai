@@ -259,8 +259,13 @@ export default function TaskPage({ params }: { params: { id: string } }) {
                           {s.head_sha ? <span className="text-muted-foreground"> · {s.head_sha.slice(0, 7)}</span> : null}
                           <span className="text-muted-foreground"> · {s.source}</span>
                         </span>
-                        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                          {s.status}{s.pr_state === "closed" ? " · closed" : ""}
+                        <span className="flex items-center gap-2">
+                          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                            {s.status}{s.pr_state === "closed" ? " · closed" : ""}
+                          </span>
+                          <Link href={`/submissions/${s.id}`} className="text-xs font-medium text-primary hover:underline">
+                            Review report
+                          </Link>
                         </span>
                       </li>
                     ))}
@@ -373,7 +378,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
                 <Button variant="outline" onClick={() => transition("todo")} disabled={busy}>Move back to To Do</Button>
               ) : null}
               {task.status === "locked" ? (
-                <p className="text-sm text-muted-foreground">Locked until prerequisites are approved through evaluation.</p>
+                <p className="text-sm text-muted-foreground">Locked until the tickets it depends on are approved.</p>
               ) : null}
             </div>
           </div>

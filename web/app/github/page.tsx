@@ -91,8 +91,7 @@ export default function GithubPage() {
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Repository access</p>
       <h1 className="mt-1 text-2xl font-extrabold tracking-tight">GitHub Connection</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Link your internship repository so pull requests map to sprint tickets. No fake OAuth — linking is explicit
-        and revocation is immediate.
+        Connect your repository so your pull requests count toward sprint tickets. You can unlink anytime.
       </p>
       {error ? <p role="alert" className="mt-3 text-sm text-destructive">{error}</p> : null}
       {status === null ? (
@@ -188,8 +187,8 @@ export default function GithubPage() {
                 <Input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="owner/repo"
-                  aria-label="Repository full name"
+                  placeholder="owner/repo or github.com URL"
+                  aria-label="Repository full name or GitHub URL"
                   className="sm:max-w-xs"
                 />
                 <Button onClick={link} disabled={busy || !fullName.trim()}>Link repository</Button>
@@ -213,7 +212,7 @@ export default function GithubPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Submitted pull requests</CardTitle>
-              <CardDescription>From verified webhooks or ticket submissions.</CardDescription>
+              <CardDescription>Pull requests from your linked repositories.</CardDescription>
             </CardHeader>
             <CardContent>
               {subs === null ? (

@@ -229,6 +229,52 @@ def test_manual_submit_requires_linked_repo_and_sha(client, webhook_secret, fake
     assert fake_queue == []
 
 
+def test_repo_link_accepts_github_urls(client):
+    """Pasted github.com URLs normalize to canonical owner/repo."""
+    headers = _register(client, "gh-urls@test.local")
+    _enroll(client, headers)
+    cases = {
+        "https://github.com/coderjks/px0/branches": "coderjks/px0",
+        "https://github.com/coderjks/px0": "coderjks/px0",
+        "https://github.com/coderjks/px0/": "coderjks/px0",
+        "https://github.com/coderjks/px0.git": "coderjks/px0",
+        "https://github.com/coderjks/px0/tree/main": "coderjks/px0",
+        "http://github.com/coderjks/px0/pull/7": "coderjks/px0",
+        "https://www.github.com/coderjks/px0": "coderjks/px0",
+        "  coderjks/px0-spaces  ": "coderjks/px0-spaces",
+    }
+    for raw, canonical in cases.items():
+        res = client.post("/api/github/repos", json={"full_name": raw}, headers=headers)
+        assert res.status_code == 201, (raw, res.text)
+        assert res.json()["full_name"] == canonical
+        assert (
+            client.delete(f"/api/github/repos/{res.json()['id']}", headers=headers).status_code == 204
+        )
+    # A URL is just an alias: linking the canonical name afterwards conflicts.
+    created = client.post(
+        "/api/github/repos", json={"full_name": "https://github.com/coderjks/px0/branches"}, headers=headers
+    )
+    assert created.status_code == 201
+    assert (
+        client.post("/api/github/repos", json={"full_name": "coderjks/px0"}, headers=headers).status_code
+        == 409
+    )
+
+
+def test_repo_link_rejects_non_github_refs(client):
+    headers = _register(client, "gh-badrefs@test.local")
+    _enroll(client, headers)
+    for raw in [
+        "bad name!!",
+        "https://gitlab.com/coderjks/px0",
+        "https://github.com.evil.com/coderjks/px0",
+        "https://github.com/onlyowner",
+        "https://github.com//px0",
+        "",
+    ]:
+        assert client.post("/api/github/repos", json={"full_name": raw}, headers=headers).status_code == 422, raw
+
+
 def test_repo_link_validation_and_scoping(client):
     headers = _register(client, "gh-repos@test.local")
     _enroll(client, headers)
