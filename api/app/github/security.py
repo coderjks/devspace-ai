@@ -117,6 +117,46 @@ def get_installation_token(
     return data["token"], data.get("expires_at", "")
 
 
+def get_repo_installation_id(
+    api_url: str,
+    app_id: str,
+    private_key_path: str,
+    owner: str,
+    repo: str,
+) -> int:
+    """Return the GitHub App installation ID for a repository.
+
+    Uses the App JWT (installation tokens are scoped to an installation, so
+    the installation must be looked up first). Raises GithubNotConfigured
+    when App credentials are absent; other HTTP/API errors propagate.
+    """
+    if not app_id or not private_key_path:
+        raise GithubNotConfigured("GITHUB_APP_ID / GITHUB_APP_PRIVATE_KEY_PATH not set")
+    app_jwt = mint_app_jwt(app_id, private_key_path)
+    res = httpx.get(
+        f"{api_url}/repos/{owner}/{repo}/installation",
+        headers={"Authorization": f"Bearer {app_jwt}", "Accept": "application/vnd.github+json"},
+        timeout=15,
+    )
+    if res.status_code == 404:
+        raise GithubNotConfigured(f"GitHub App is not installed on {owner}/{repo}")
+    res.raise_for_status()
+    return int(res.json()["id"])
+
+
+def extract_installation_id(payload: dict) -> int | None:
+    """Read the installation ID GitHub attaches to webhook deliveries.
+
+    Returns None when the payload carries no usable ID (never raises — a
+    missing ID simply leaves the stored value unchanged).
+    """
+    inst = payload.get("installation") if isinstance(payload, dict) else None
+    raw = inst.get("id") if isinstance(inst, dict) else None
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        return None
+    return raw
+
+
 def verify_fork(api_url: str, full_name: str, base_repo: str) -> tuple[bool, str]:
     """Check via the public API that full_name is a fork of base_repo.
 

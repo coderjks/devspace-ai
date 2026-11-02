@@ -26,8 +26,10 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.github.security import (
     GithubNotConfigured,
+    extract_installation_id,
     fetch_pr_head_sha,
     get_installation_token,
+    get_repo_installation_id,
     parse_pr_url,
     parse_repo_ref,
     resolve_task_key,
@@ -174,6 +176,13 @@ async def github_webhook(
             record.error = f"unlinked repository {repo_full_name}"
             db.commit()
             return JSONResponse(status_code=200, content={"status": "unlinked_repo", "delivery": delivery})
+
+    # GitHub attaches the App installation to every delivery for an installed
+    # App. Persist it so SHA resolution and diff fetch keep working without
+    # any manual step (previously nothing ever wrote installation_id).
+    installation_id = extract_installation_id(payload)
+    if installation_id is not None and repo.installation_id != installation_id:
+        repo.installation_id = installation_id
 
     pr_number = pr.get("number") or payload.get("number")
     head_sha = ((pr.get("head") or {}).get("sha")) or ""
@@ -407,8 +416,28 @@ def create_submission(
     head_sha = body.head_sha
     source = "manual"
     if head_sha is None:
-        # Resolve the exact SHA from GitHub when the App is configured.
-        if not settings.github_configured or not repo.installation_id:
+        # Resolve the exact SHA from GitHub when the App is configured. A
+        # linked repo may predate the installation (installation_id NULL):
+        # resolve and store it on first use instead of failing.
+        if not settings.github_configured:
+            raise HTTPException(
+                status_code=422,
+                detail="head_sha is required without a GitHub App installation; paste the exact commit SHA from the PR",
+            )
+        if repo.installation_id is None:
+            try:
+                repo.installation_id = get_repo_installation_id(
+                    settings.github_api_url,
+                    settings.github_app_id,
+                    settings.github_private_key_path,
+                    owner,
+                    repo_name,
+                )
+            except GithubNotConfigured as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+            except Exception as exc:
+                raise HTTPException(status_code=502, detail=f"could not read GitHub App installation: {exc}") from exc
+        if not repo.installation_id:
             raise HTTPException(
                 status_code=422,
                 detail="head_sha is required without a GitHub App installation; paste the exact commit SHA from the PR",

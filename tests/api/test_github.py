@@ -229,6 +229,52 @@ def test_manual_submit_requires_linked_repo_and_sha(client, webhook_secret, fake
     assert fake_queue == []
 
 
+def test_webhook_persists_installation_id(client, webhook_secret, fake_queue):
+    headers = _register(client, "gh-install@test.local")
+    _enroll(client, headers)
+    repo = _link(client, headers, "student/install-repo")
+    payload = _pr_payload("opened", repo["full_name"])
+    payload["installation"] = {"id": 987654}
+    res = _post_webhook(client, payload)
+    assert res.status_code == 200, res.text
+    status = client.get("/api/github/status", headers=headers).json()
+    linked = next(r for r in status["repos"] if r["full_name"] == "student/install-repo")
+    assert linked["installation_id"] == 987654
+    assert linked["link_method"] == "app"
+
+
+def test_manual_submit_resolves_missing_installation_id(client, monkeypatch, fake_queue):
+    settings = SimpleNamespace(
+        github_webhook_secret=SECRET,
+        github_configured=True,
+        github_app_id="123",
+        github_private_key_path="/tmp/key.pem",
+        github_api_url="https://api.github.com",
+        github_base_repo="",
+    )
+    monkeypatch.setattr("app.routers.github.get_settings", lambda: settings)
+    monkeypatch.setattr("app.routers.github.get_repo_installation_id", lambda *a: 555)
+    monkeypatch.setattr("app.routers.github.get_installation_token", lambda *a: ("tok", "exp"))
+    monkeypatch.setattr(
+        "app.routers.github.fetch_pr_head_sha", lambda *a: ("d" * 40, "open", "ai-001-x", "main")
+    )
+    headers = _register(client, "gh-resolve@test.local")
+    _enroll(client, headers)
+    _link(client, headers, "student/resolve-repo")
+    tid = _task_id(client, headers)
+    res = client.post(
+        "/api/submissions",
+        json={"task_id": tid, "pr_url": "https://github.com/student/resolve-repo/pull/9"},
+        headers=headers,
+    )
+    assert res.status_code == 201, res.text
+    assert res.json()["head_sha"] == "d" * 40
+    status = client.get("/api/github/status", headers=headers).json()
+    linked = next(r for r in status["repos"] if r["full_name"] == "student/resolve-repo")
+    assert linked["installation_id"] == 555
+    assert linked["link_method"] == "app"
+
+
 def test_repo_link_accepts_github_urls(client):
     """Pasted github.com URLs normalize to canonical owner/repo."""
     headers = _register(client, "gh-urls@test.local")
