@@ -48,7 +48,10 @@ services:
 
   worker:
     build:
-      context: ../worker
+      context: ../api
+    command: ["python", "-m", "app.worker"]
+    env_file:
+      - ../.env
     environment:
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql+psycopg://devspace:devspace@postgres:5432/devspace
@@ -57,6 +60,9 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    volumes:
+      - ../api:/app
+      - ../curriculum:/curriculum:ro
 
   web:
     build:
