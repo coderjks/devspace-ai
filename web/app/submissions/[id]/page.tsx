@@ -73,8 +73,8 @@ export default function SubmissionPage({ params }: { params: { id: string } }) {
       <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">PR evaluation</p>
       <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Review report</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Results are tied to an exact commit SHA. A language-model review alone never approves a ticket —
-        approval follows fixed rules applied to your checks and evidence.
+        Each result belongs to one exact commit. AI feedback alone never approves a ticket —
+        approval follows fixed checks on your work.
       </p>
       {error ? <p role="alert" className="mt-3 text-sm text-destructive">{error}</p> : null}
       {evals === null ? (
@@ -85,7 +85,7 @@ export default function SubmissionPage({ params }: { params: { id: string } }) {
       ) : latest === null ? (
         <Card className="mt-6">
           <CardContent>
-            <EmptyState icon={FlaskConical} title="Evaluation in progress" hint="The background worker picks up queued submissions automatically — this page checks for results every few seconds. You can also trigger a run from the GitHub page." />
+            <EmptyState icon={FlaskConical} title="Evaluation in progress" hint="Your submission is in the queue — this page updates by itself. You can also start a run from the GitHub page." />
           </CardContent>
         </Card>
       ) : (
