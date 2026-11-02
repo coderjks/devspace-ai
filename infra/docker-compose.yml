@@ -28,6 +28,8 @@ services:
   api:
     build:
       context: ../api
+    env_file:
+      - ../.env
     environment:
       DATABASE_URL: postgresql+psycopg://devspace:devspace@postgres:5432/devspace
       DATABASE_URL_UNPOOLED: postgresql+psycopg://devspace:devspace@postgres:5432/devspace
