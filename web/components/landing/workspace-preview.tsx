@@ -53,7 +53,7 @@ export function WorkspacePreview() {
   return (
     <div
       role="img"
-      aria-label="Illustrative preview of the DevSpace AI dashboard with sample data"
+      aria-label="Preview of the DevSpace AI dashboard"
       className="overflow-hidden rounded-2xl border border-border bg-card shadow-lift ring-1 ring-foreground/5"
     >
       <div className="flex items-center gap-1.5 border-b border-border px-4 py-2.5" aria-hidden>

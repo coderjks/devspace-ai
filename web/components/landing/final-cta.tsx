@@ -28,9 +28,6 @@ export function FinalCta() {
                 </Link>
               </Button>
             </div>
-            <p className="mt-5 text-xs text-muted-foreground">
-              A simulated learning environment — not employment or accredited training.
-            </p>
           </div>
         </div>
       </Reveal>

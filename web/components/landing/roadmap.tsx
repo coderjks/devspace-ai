@@ -67,7 +67,7 @@ export function Roadmap() {
       </Reveal>
       <Reveal delay={120} className="mt-8 text-center">
         <Link
-          href="/roadmap"
+          href="/login?next=/roadmap"
           className="group inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
           Explore the full roadmap

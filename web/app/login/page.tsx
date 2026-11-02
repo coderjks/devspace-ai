@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { AuthCard } from "@/components/auth/auth-card";
 import { BrandPanel } from "@/components/auth/brand-panel";
@@ -32,7 +33,9 @@ export default function LoginPage() {
               </Link>
             </p>
             <div id="auth-card">
-              <AuthCard />
+              <Suspense>
+                <AuthCard />
+              </Suspense>
             </div>
           </div>
         </main>

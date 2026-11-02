@@ -295,7 +295,7 @@ export default function StandupPage() {
         <p className="mt-1.5 max-w-xl text-sm leading-6 text-white/85">
           {done
             ? "Your check-in is on the record. Tomorrow builds on today."
-            : "Three quick questions — yesterday, today, blockers. Type or dictate; nothing is recorded until you confirm."}
+            : "Share what you finished, what you're doing next, and anything in your way. Type or speak your answers — nothing is saved until you review and confirm."}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
