@@ -28,6 +28,43 @@ function checkBadge(status: string): string {
   return "bg-muted text-muted-foreground";
 }
 
+// Internal check names and details stay in the API (evidence). What the
+// student sees is always plain language — never system wording.
+function friendlyCheck(check: Check): { title: string; detail: string } {
+  if (check.name === "diff_available") {
+    return check.status === "pass"
+      ? { title: "Changes readable", detail: "We could read your changes for this result." }
+      : { title: "Changes not readable yet", detail: "We couldn't read your changes, so there's nothing to review yet. Push your work and run this again." };
+  }
+  if (check.name === "secret_scan") {
+    return check.status === "fail"
+      ? { title: "Possible exposed secret", detail: "Something looks like a posted password or key. Remove it, replace it where it was created, and push again." }
+      : { title: "No exposed secrets", detail: "Nothing looks like a posted password or key." };
+  }
+  if (check.name === "wip_marker") {
+    return check.status === "fail"
+      ? { title: "Marked as draft", detail: "Your changes are marked as not ready. Clear the marker when the work is done and push again." }
+      : { title: "Not marked as draft", detail: "No draft markers found." };
+  }
+  if (check.name === "diff_size") {
+    return { title: "Changes too large", detail: "These changes are too large to review in one go — split them into smaller updates." };
+  }
+  if (check.status === "pass") return { title: "Check passed", detail: "This check passed." };
+  if (check.status === "fail") return { title: "Needs attention", detail: "This check needs attention before the ticket can be approved. See your ticket for next steps." };
+  return { title: "Check couldn't run", detail: "This check couldn't run for this result. Run it again." };
+}
+
+function friendlySeverity(severity: string): string {
+  if (severity === "blocking") return "must fix";
+  if (severity === "major") return "should fix";
+  if (severity === "minor") return "suggestion";
+  return "note";
+}
+
+function changesUnreadable(checks?: Check[]): boolean {
+  return (checks ?? []).some((c) => c.name === "diff_available" && c.status !== "pass");
+}
+
 export default function SubmissionPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [me, setMe] = useState<{ email: string } | null>(null);
@@ -104,20 +141,23 @@ export default function SubmissionPage({ params }: { params: { id: string } }) {
               <CardTitle className="flex items-center gap-2 text-base">
                 <ScanSearch size={16} aria-hidden /> Automated checks
               </CardTitle>
-              <CardDescription>Safe static analysis only — student code is never executed by this pipeline.</CardDescription>
+              <CardDescription>Quick automated checks on your submission — your work is read, never run, here.</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {(latest.test_results.checks ?? []).map((c) => (
-                  <li key={c.name} className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-                    <span>
-                      <strong className="font-medium">{c.name}</strong>
-                      <span className="text-muted-foreground"> — {c.detail}</span>
-                      {c.blocking ? <span className="text-destructive"> · blocking</span> : null}
-                    </span>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${checkBadge(c.status)}`}>{c.status}</span>
-                  </li>
-                ))}
+                {(latest.test_results.checks ?? []).map((c) => {
+                  const friendly = friendlyCheck(c);
+                  return (
+                    <li key={c.name} className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+                      <span>
+                        <strong className="font-medium">{friendly.title}</strong>
+                        <span className="text-muted-foreground"> — {friendly.detail}</span>
+                        {c.blocking ? <span className="text-destructive"> · required</span> : null}
+                      </span>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${checkBadge(c.status)}`}>{c.status}</span>
+                    </li>
+                  );
+                })}
               </ul>
             </CardContent>
           </Card>
@@ -127,22 +167,26 @@ export default function SubmissionPage({ params }: { params: { id: string } }) {
                 <Sparkles size={16} aria-hidden /> AI review
                 {latest.ai_review.mock ? (
                   <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-                    mock — advisory only
+                    practice review
                   </span>
                 ) : null}
               </CardTitle>
-              <CardDescription>{latest.ai_review.summary ?? "No summary."}</CardDescription>
+              <CardDescription>
+                {changesUnreadable(latest.test_results.checks)
+                  ? "We couldn't read your changes for this result, so there's nothing to review yet. Push your work and run this again."
+                  : (latest.ai_review.summary ?? "No reviewer notes for this result.")}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {latest.ai_review.error ? (
-                <p className="text-sm text-destructive">Review unavailable: {latest.ai_review.error}</p>
+                <p className="text-sm text-destructive">The review couldn&apos;t finish this time — try running it again.</p>
               ) : (latest.ai_review.findings ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No findings reported.</p>
+                <p className="text-sm text-muted-foreground">No issues found.</p>
               ) : (
                 <ul className="space-y-2">
                   {(latest.ai_review.findings ?? []).map((f, i) => (
                     <li key={i} className="rounded-lg border border-border px-3 py-2 text-sm">
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">{f.severity}</span>
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">{friendlySeverity(f.severity)}</span>
                       <p className="mt-1.5 text-muted-foreground">{f.message}</p>
                     </li>
                   ))}
@@ -150,7 +194,7 @@ export default function SubmissionPage({ params }: { params: { id: string } }) {
               )}
               {evals.length > 1 ? (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  {evals.length - 1} older evaluation{evals.length > 2 ? "s" : ""} for previous SHAs — history is immutable, newest shown.
+                  We keep every result — the newest is shown here.
                 </p>
               ) : null}
             </CardContent>

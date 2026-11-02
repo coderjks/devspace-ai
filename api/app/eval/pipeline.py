@@ -66,7 +66,9 @@ def meta_reviewer(redacted_diff: str, checks_summary: str, sha: str, timeout_s: 
         "You review student pull request diffs. Reply with ONLY a JSON object matching: "
         '{"schema_version": "1", "sha": "<sha>", "mock": false, "summary": "<2-3 sentences>", '
         '"findings": [{"severity": "info|minor|major|blocking", "message": "<text>", '
-        '"file": "<optional>", "line": <optional>}]}. No other text.'
+        '"file": "<optional>", "line": <optional>}]}. No other text. '
+        "Write the summary and every finding message for the student in plain, friendly "
+        "language. Never mention internal check names, commit SHAs, or pipeline details."
     )
     try:
         resp = provider.respond(
