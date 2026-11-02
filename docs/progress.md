@@ -155,7 +155,7 @@ Legend (AGENTS.md § Engineering workflow): `LIVE` real provider verified · `MO
 
 | Integration | Phase introduced | Status | Evidence / blocker |
 |---|---|---|---|
-| Meta model runtime (LLM gateway, review/chat/hints) | API preflight, Phase 03 | **LIVE** (model `muse-spark-1.3-contributor`, key + ID from local `api/.env`, base `https://api.meta.ai/v1`) | Live chat preflight PASSED (tech-lead reply, `mock:false`, sprint-grounded). Mock adapter retained as fallback via `LLM_PROVIDER`. Secrets gitignored, never logged. |
+| Meta model runtime (LLM gateway, review/chat/hints) | API preflight, Phase 03 | **LIVE** (model `muse-spark-1.3-contributor`, key + ID from repo-root `.env`, base `https://api.meta.ai/v1`) | Live chat preflight PASSED (tech-lead reply, `mock:false`, sprint-grounded). Mock adapter retained as fallback via `LLM_PROVIDER`. Secrets gitignored, never logged. |
 | GitHub App (install, tokens, webhook) | Phase 05 | **MOCK-path live** (real github.com UNTESTED) | HMAC/dedupe/mapping verified with synthetic signed deliveries + manual mode. No App created, no installation, no webhook secret configured. See `docs/github-app-setup.md`. |
 | Isolated code runner / sandbox | Phase 06 | **Disabled by design** | Static non-executing checks only; no sandbox selected. Live execution stays off; mock review labeled advisory. |
 | Muse Spark 1.3 / Muse Wonder routing | API preflight | **UNTESTED** | Optional configurable routes per PRD §13; coding-IDE model choice is distinct from runtime routing. Never hardcode unverified IDs. |
@@ -256,6 +256,7 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-10-29 | Phase 09 built on `feat/09-voice-flows`: `/voice` page (consent, push-to-talk + Type mode, editable transcript, reply + audio playback, text-chat link) + guided Scrum standup reusing propose/confirm. Typed turns labeled `input_mode=typed`. Live voice loop green. Committed as `8ada3f5`. |
 | 2026-10-29 | Phase 10 built on `feat/10-learning`: deterministic EM check-in + Scrum retro + audit-derived notifications (owner-scoped, no fabrication), `/learning` page with 12-week strip. 3 API tests (100 total); tsc + build + ruff + mypy green; live endpoint check. Committed as `b4b6b0c`. Phases 08–10 APPROVED (explicit instruction). Pointer at Phase 11. |
 | 2026-10-29 | Phase 11 on `feat/11-qa`: live full-journey E2E (29/30 checks; 1 miss was script-side, app correct), hostile-diff injection test, secrets/env audit, a11y spot-check. [qa-report.md](qa-report.md) with PASS/DEFERRED/UNTESTED. 101 pytest + ruff + mypy + tsc + build green. Deferred: rate limits, retention purge. Pointer at Phase 12. |
+| 2026-11-02 | Env consolidation on `feat/chat-identity` (uncommitted): root `.env` is the single canonical file (MODEL/STT keys moved in, dead `META_*` dropped); `api/.env` is a pointer file; `dev.sh` falls back to root values; conftest forces mock STT/TTS + unconfigured-GitHub baseline (fixes 3 github tests broken by live root values leaking in). 122 pytest green; containers verified live (llm+stt meta, github configured), worker draining. |
 
 ---
 

@@ -3,9 +3,20 @@ import sys
 from pathlib import Path
 
 # Use SQLite for tests and set env BEFORE importing the app.
-# Force the mock provider so a developer's local api/.env
-# (e.g. LLM_PROVIDER=meta) can never leak live-model config into the suite.
+# Force mock providers so a developer's local .env
+# (e.g. LLM_PROVIDER=meta, STT_PROVIDER=meta) can never leak live-model
+# config into the suite. Root .env is still read for other settings.
 os.environ["LLM_PROVIDER"] = "mock"
+os.environ["STT_PROVIDER"] = "mock"
+os.environ["TTS_PROVIDER"] = "mock"
+# GitHub integration is exercised through fixtures with explicit SimpleNamespace
+# settings. Force the unconfigured baseline so live values in a developer's
+# root .env (webhook secret, App ID, base repo) can never leak in: several
+# tests assert the not-configured path and real-fork verification behavior.
+os.environ["GITHUB_WEBHOOK_SECRET"] = ""
+os.environ["GITHUB_APP_ID"] = ""
+os.environ["GITHUB_APP_PRIVATE_KEY_PATH"] = ""
+os.environ["GITHUB_BASE_REPO"] = ""
 os.environ["DATABASE_URL"] = "sqlite+pysqlite:///:memory:"
 os.environ["DATABASE_URL_UNPOOLED"] = ""
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-at-least-32-characters-long!!"
