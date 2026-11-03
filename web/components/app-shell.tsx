@@ -9,11 +9,10 @@ import {
   Github,
   KanbanSquare,
   LayoutDashboard,
+  LogOut,
   Map,
   Menu,
   Trophy,
-  Mic,
-  GraduationCap,
   CircleHelp,
   User,
   Users,
@@ -21,23 +20,24 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { logout } from "@/lib/api";
+import { api, logout } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/logo";
 
+// Workflow order: home → work → daily rituals → collaborate → submit →
+// review results → curriculum reference. Utility links live below the divider.
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/board", label: "Board", icon: KanbanSquare },
   { href: "/standup", label: "Standup", icon: CalendarCheck },
-  { href: "/activity", label: "Activity", icon: Activity },
-  { href: "/github", label: "GitHub", icon: Github },
-  { href: "/progression", label: "Growth", icon: Trophy },
-  { href: "/voice", label: "Voice", icon: Mic },
-  { href: "/learning", label: "Learning", icon: GraduationCap },
-  { href: "/help", label: "Help", icon: CircleHelp },
-  { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/team", label: "Team", icon: Users },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/github", label: "GitHub", icon: Github },
+  { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/progression", label: "Growth", icon: Trophy },
+  { href: "/roadmap", label: "Roadmap", icon: Map },
 ];
+
+const SECONDARY_NAV = [{ href: "/help", label: "Help", icon: CircleHelp }];
 
 function isActive(pathname: string | null, href: string): boolean {
   if (!pathname) return false;
@@ -57,12 +57,7 @@ function SidebarContent({ email, onNavigate }: { email?: string; onNavigate?: ()
         className="flex items-center gap-2 px-2 py-1"
         aria-label="DevSpace AI dashboard"
       >
-        <span
-          aria-hidden
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground"
-        >
-          D
-        </span>
+        <Logo size="md" />
         <span className="text-sm font-bold tracking-tight">DevSpace AI</span>
       </Link>
       <nav aria-label="Workspace" className="mt-6 flex-1 space-y-1">
@@ -88,12 +83,67 @@ function SidebarContent({ email, onNavigate }: { email?: string; onNavigate?: ()
           );
         })}
       </nav>
-      {email ? (
-        <p className="truncate border-t border-sidebar-border px-3 pt-4 text-xs text-muted-foreground" title={email}>
-          {email}
-        </p>
-      ) : null}
+      <div className="space-y-1 border-t border-sidebar-border px-3 pt-4">
+        {SECONDARY_NAV.map((item) => {
+          const active = isActive(pathname, item.href);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-150",
+                active
+                  ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+              )}
+            >
+              <Icon size={17} aria-hidden className="shrink-0" />
+              {item.label}
+            </Link>
+          );
+        })}
+        <Link
+          href="/profile"
+          onClick={onNavigate}
+          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent/60 hover:text-foreground"
+        >
+          <User size={17} aria-hidden className="shrink-0" />
+          Profile
+        </Link>
+      </div>
     </div>
+  );
+}
+
+function ProviderDot() {
+  const [mock, setMock] = useState<boolean | null>(null);
+  const [model, setModel] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    api<{ mock: boolean; model: string }>("/api/agents/provider")
+      .then((s) => {
+        if (!cancelled) {
+          setMock(s.mock);
+          setModel(s.model);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMock(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  if (mock === null) return null;
+  return (
+    <span
+      title={mock ? "Mock teammate replies (no live model)" : `Live model: ${model}`}
+      aria-label={mock ? "Mock model mode" : `Live model ${model}`}
+      className={`inline-block h-2 w-2 rounded-full ${mock ? "bg-amber-500" : "bg-emerald-500"}`}
+    />
   );
 }
 
@@ -157,12 +207,7 @@ export function AppShell({ email, children }: { email?: string; children: React.
                 {drawerOpen ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
               </Button>
               <Link href="/dashboard" className="flex items-center gap-2 md:hidden" aria-label="DevSpace AI dashboard">
-                <span
-                  aria-hidden
-                  className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-[11px] font-black text-primary-foreground"
-                >
-                  D
-                </span>
+                <Logo size="sm" />
                 <span className="text-sm font-bold tracking-tight">DevSpace AI</span>
               </Link>
             </div>
@@ -172,9 +217,20 @@ export function AppShell({ email, children }: { email?: string; children: React.
                   {email}
                 </span>
               ) : null}
+              <span className="flex items-center px-1">
+                <ProviderDot />
+              </span>
               <ThemeToggle />
-              <Button variant="outline" size="sm" onClick={logout}>
-                Log out
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                aria-label="Log out"
+                title="Log out"
+                className="gap-1.5 text-muted-foreground hover:text-destructive"
+              >
+                <LogOut size={15} aria-hidden />
+                <span className="hidden sm:inline">Log out</span>
               </Button>
             </div>
           </div>

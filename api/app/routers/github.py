@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import json
-import re
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -27,9 +26,12 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.github.security import (
     GithubNotConfigured,
+    extract_installation_id,
     fetch_pr_head_sha,
     get_installation_token,
+    get_repo_installation_id,
     parse_pr_url,
+    parse_repo_ref,
     resolve_task_key,
     verify_fork,
     verify_signature,
@@ -46,6 +48,7 @@ from app.models import (
 from app.queue import enqueue_evaluation, get_redis
 from app.schemas import (
     GithubReposOut,
+    OpenPullRequest,
     RepoLinkIn,
     RepositoryOut,
     SubmissionCreateIn,
@@ -54,7 +57,6 @@ from app.schemas import (
 
 router = APIRouter(tags=["github"])
 
-FULL_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 PR_ACTIONS_UPSERT = {"opened", "reopened", "synchronize"}
 
 
@@ -175,6 +177,13 @@ async def github_webhook(
             db.commit()
             return JSONResponse(status_code=200, content={"status": "unlinked_repo", "delivery": delivery})
 
+    # GitHub attaches the App installation to every delivery for an installed
+    # App. Persist it so SHA resolution and diff fetch keep working without
+    # any manual step (previously nothing ever wrote installation_id).
+    installation_id = extract_installation_id(payload)
+    if installation_id is not None and repo.installation_id != installation_id:
+        repo.installation_id = installation_id
+
     pr_number = pr.get("number") or payload.get("number")
     head_sha = ((pr.get("head") or {}).get("sha")) or ""
     task_key = resolve_task_key(pr.get("title"), pr.get("body"), (pr.get("head") or {}).get("ref"))
@@ -262,9 +271,9 @@ def link_repo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RepositoryOut:
-    full_name = body.full_name.strip()
-    if not FULL_NAME_RE.match(full_name):
-        raise HTTPException(status_code=422, detail="full_name must look like owner/repo")
+    full_name = parse_repo_ref(body.full_name)
+    if full_name is None:
+        raise HTTPException(status_code=422, detail="Enter owner/repo or paste a github.com repository URL")
     existing = (
         db.query(Repository)
         .filter(Repository.user_id == current_user.id, Repository.full_name == full_name)
@@ -288,6 +297,61 @@ def link_repo(
     db.commit()
     db.refresh(repo)
     return _repo_out(repo)
+
+
+def fetch_open_pulls(api_url: str, full_name: str) -> list[dict]:
+    """List open PRs of a public repo via the GitHub REST API (no auth).
+
+    Raises RuntimeError with a human message on any failure; the route
+    converts it to a 502. Monkeypatch this in tests — never hit the network.
+    """
+    import httpx
+
+    try:
+        res = httpx.get(
+            f"{api_url.rstrip('/')}/repos/{full_name}/pulls",
+            params={"state": "open", "per_page": 20},
+            headers={"Accept": "application/vnd.github+json"},
+            timeout=15,
+        )
+        res.raise_for_status()
+        pulls = res.json()
+    except Exception as exc:
+        raise RuntimeError(f"Could not list pull requests for {full_name}. Is the fork public?") from exc
+    out = []
+    for pr in pulls if isinstance(pulls, list) else []:
+        head = pr.get("head") or {}
+        if isinstance(pr.get("number"), int) and head.get("sha"):
+            out.append(
+                {
+                    "number": pr["number"],
+                    "title": pr.get("title") or f"PR #{pr['number']}",
+                    "head_sha": head["sha"],
+                    "html_url": pr.get("html_url") or "",
+                }
+            )
+    return out
+
+
+@router.get("/api/github/repos/{repo_id}/pulls", response_model=list[OpenPullRequest])
+def list_open_pulls(
+    repo_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[OpenPullRequest]:
+    repo = (
+        db.query(Repository)
+        .filter(Repository.id == repo_id, Repository.user_id == current_user.id)
+        .first()
+    )
+    if repo is None:
+        raise HTTPException(status_code=404, detail="repository not found")
+    settings = get_settings()
+    try:
+        pulls = fetch_open_pulls(settings.github_api_url, repo.full_name)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return [OpenPullRequest.model_validate(p) for p in pulls]
 
 
 @router.delete("/api/github/repos/{repo_id}", status_code=204)
@@ -352,8 +416,28 @@ def create_submission(
     head_sha = body.head_sha
     source = "manual"
     if head_sha is None:
-        # Resolve the exact SHA from GitHub when the App is configured.
-        if not settings.github_configured or not repo.installation_id:
+        # Resolve the exact SHA from GitHub when the App is configured. A
+        # linked repo may predate the installation (installation_id NULL):
+        # resolve and store it on first use instead of failing.
+        if not settings.github_configured:
+            raise HTTPException(
+                status_code=422,
+                detail="head_sha is required without a GitHub App installation; paste the exact commit SHA from the PR",
+            )
+        if repo.installation_id is None:
+            try:
+                repo.installation_id = get_repo_installation_id(
+                    settings.github_api_url,
+                    settings.github_app_id,
+                    settings.github_private_key_path,
+                    owner,
+                    repo_name,
+                )
+            except GithubNotConfigured as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+            except Exception as exc:
+                raise HTTPException(status_code=502, detail=f"could not read GitHub App installation: {exc}") from exc
+        if not repo.installation_id:
             raise HTTPException(
                 status_code=422,
                 detail="head_sha is required without a GitHub App installation; paste the exact commit SHA from the PR",

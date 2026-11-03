@@ -155,7 +155,7 @@ Legend (AGENTS.md § Engineering workflow): `LIVE` real provider verified · `MO
 
 | Integration | Phase introduced | Status | Evidence / blocker |
 |---|---|---|---|
-| Meta model runtime (LLM gateway, review/chat/hints) | API preflight, Phase 03 | **LIVE** (model `muse-spark-1.3-contributor`, key + ID from local `api/.env`, base `https://api.meta.ai/v1`) | Live chat preflight PASSED (tech-lead reply, `mock:false`, sprint-grounded). Mock adapter retained as fallback via `LLM_PROVIDER`. Secrets gitignored, never logged. |
+| Meta model runtime (LLM gateway, review/chat/hints) | API preflight, Phase 03 | **LIVE** (model `muse-spark-1.3-contributor`, key + ID from repo-root `.env`, base `https://api.meta.ai/v1`) | Live chat preflight PASSED (tech-lead reply, `mock:false`, sprint-grounded). Mock adapter retained as fallback via `LLM_PROVIDER`. Secrets gitignored, never logged. |
 | GitHub App (install, tokens, webhook) | Phase 05 | **MOCK-path live** (real github.com UNTESTED) | HMAC/dedupe/mapping verified with synthetic signed deliveries + manual mode. No App created, no installation, no webhook secret configured. See `docs/github-app-setup.md`. |
 | Isolated code runner / sandbox | Phase 06 | **Disabled by design** | Static non-executing checks only; no sandbox selected. Live execution stays off; mock review labeled advisory. |
 | Muse Spark 1.3 / Muse Wonder routing | API preflight | **UNTESTED** | Optional configurable routes per PRD §13; coding-IDE model choice is distinct from runtime routing. Never hardcode unverified IDs. |
@@ -256,6 +256,8 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-10-29 | Phase 09 built on `feat/09-voice-flows`: `/voice` page (consent, push-to-talk + Type mode, editable transcript, reply + audio playback, text-chat link) + guided Scrum standup reusing propose/confirm. Typed turns labeled `input_mode=typed`. Live voice loop green. Committed as `8ada3f5`. |
 | 2026-10-29 | Phase 10 built on `feat/10-learning`: deterministic EM check-in + Scrum retro + audit-derived notifications (owner-scoped, no fabrication), `/learning` page with 12-week strip. 3 API tests (100 total); tsc + build + ruff + mypy green; live endpoint check. Committed as `b4b6b0c`. Phases 08–10 APPROVED (explicit instruction). Pointer at Phase 11. |
 | 2026-10-29 | Phase 11 on `feat/11-qa`: live full-journey E2E (29/30 checks; 1 miss was script-side, app correct), hostile-diff injection test, secrets/env audit, a11y spot-check. [qa-report.md](qa-report.md) with PASS/DEFERRED/UNTESTED. 101 pytest + ruff + mypy + tsc + build green. Deferred: rate limits, retention purge. Pointer at Phase 12. |
+| 2026-11-02 | Env consolidation on `feat/chat-identity` (uncommitted): root `.env` is the single canonical file (MODEL/STT keys moved in, dead `META_*` dropped); `api/.env` is a pointer file; `dev.sh` falls back to root values; conftest forces mock STT/TTS + unconfigured-GitHub baseline (fixes 3 github tests broken by live root values leaking in). 122 pytest green; containers verified live (llm+stt meta, github configured), worker draining. |
+| 2026-11-02 | `installation_id` gap fixed on `feat/chat-identity` (uncommitted): webhook persists `installation.id` onto the repo row; manual submit resolves+stores it via App JWT (`GET /repos/{o}/{r}/installation`); worker builds `github_diff_fetcher` per job; added `PyJWT[crypto]` (RS256 never worked without it). 2 new tests, 124 green, ruff+mypy clean. Proven live: real installation `177873874` resolved for the base repo; synthetic signed delivery stored it on the linked fork; queue stayed 0. Full live diff fetch on a real fork PR still UNTESTED. |
 
 ---
 
@@ -302,3 +304,31 @@ Commands run in this session; exit statuses observed, not assumed.
 **Acceptance:** Enroll → open ticket → start work → persisted dashboard updates ✓ (verified live with a fresh user).
 
 **Known limitations:** Diagnostic answers are a fixed server-side set (calibration only, not proctored). Team directory is static content (chat arrives in Phase 03). No Vitest suite yet — web covered by `typecheck` + `build` (Q10 partial). Full-Compose image stack still `UNTESTED`. Servers stopped after verification; nothing running. Phase 02 uncommitted on `feat/02-onboarding-board`.
+
+---
+
+## 11. Per-user task-status fix (2026-11-01, branch `fix/per-user-task-status`)
+
+Bug: `Task.status` / `blocked_reason` lived on shared curriculum rows, so one student's moves, approvals, and blocker notes leaked onto every other student's board. Fresh signups could see AI-001 already completed.
+
+Fix: shared `Task` rows are now templates only. Each student's position lives in a new `user_task_states` table (migration `b7e2f1a4c9d0`, applied clean on a fresh DB + seeded template `AI-001 todo`, rest `locked`). New resolver `api/app/task_state.py::resolve_statuses` computes the effective status per student (own approval → own state row → derived unlock → template); all board/progress/roadmap/eligibility/check-in/agent-tool reads go through it, and transitions/approvals/`flag_blocker` write only `UserTaskState`.
+
+Verification (observed, not assumed):
+- `pytest tests/api` — **116 passed**, incl. new `test_task_state_is_isolated_between_students` (Alice approves + moves AI-002 while Bob keeps template board, locked prerequisites, `next_recommended_key AI-001`, 0 completed).
+- `ruff check app` (project config) + `mypy app` (49 files) — clean. Two remaining `tests/` lint notes (`F401 Task`, `F841 sub`) pre-exist at HEAD; dead `Task` import removed.
+- Fresh-DB `alembic upgrade head` + seed — clean; template statuses confirmed.
+- Live on :8000: two fresh registrations both see `AI-001 todo`/rest `locked`; A moves AI-001 → `in_progress`, B still `todo`. Probe users removed afterwards.
+
+---
+
+## 12. Chat identity, voice/chat polish, Growth merge, certificates, UI (2026-11-01, branch `feat/chat-identity`)
+
+Chat shows teammate names with DiceBear avatars (first-name only for the student); sidebar footer drops the email; profile editing consolidated to one save. Mic dictation available on every teammate chat with transcribing loader state; consent checkbox persists. Standup keeps per-answer dictation plus conversation-mode overlay; first-tap mic race fixed.
+
+Learning page removed (check-in/retro folded into Growth); progression + progress merged; Growth cards uniform with animated sprint bar and aligned feedback widths; dashboard rebalanced. Board tickets carry per-status stripe colors. Humanized Title Case labels across pages; markdown chat rendering; markdown removed from system copy.
+
+Certificates (all six tickets approved): `certificates` table + migration `c8d9e0f1a2b3`, signed `code.signature` credential, `GET /api/certificates/{me,issue}` + public `/verify/{code}`, printable college-style sheet with QR (`qrcode` dep), dashboard banner + Growth card. Verified live: issue → QR scan-path → forged-code reject; demo + graduate accounts green.
+
+Evaluation visibility: report page polls every 5s until the worker's evaluation lands ("Evaluation in progress"); "Review report" links on board cards (both views), ticket submission rows, and the GitHub PR list. Repo linking accepts pasted `github.com/owner/repo/...` URLs, normalized to canonical `owner/repo` (`parse_repo_ref`; non-github hosts rejected). Standup redesigned: gradient hero with streak + check-in stats, per-question cards with multi-line answers and red `*` required markers, review timeline, timeline history rail.
+
+Verification: `pytest tests/api` green (incl. new certificate, URL-normalization, and per-user isolation tests), `ruff` + `mypy` clean, web `tsc` + `next build` clean, headless-Chrome screenshots (light + form flows), probe users/data removed after each live check.

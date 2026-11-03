@@ -20,6 +20,7 @@ import jwt
 
 TASK_KEY_RE = re.compile(r"\bAI-(\d{3})\b", re.IGNORECASE)
 PR_URL_RE = re.compile(r"^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$")
+OWNER_REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
 class GithubNotConfigured(Exception):
@@ -51,6 +52,30 @@ def parse_pr_url(url: str) -> tuple[str, str, int] | None:
     if not m:
         return None
     return m.group(1), m.group(2), int(m.group(3))
+
+
+def parse_repo_ref(value: str) -> str | None:
+    """Normalize a repo reference to canonical ``owner/repo`` or return None.
+
+    Accepts a bare ``owner/repo`` or any ``https://github.com/<owner>/<repo>``
+    URL with extra path segments (``/branches``, ``/tree/main``, ``/pull/7``),
+    a trailing slash, or a ``.git`` suffix. Only the github.com host is
+    accepted; anything else returns None so unrelated URLs can never alias a
+    linked repository.
+    """
+    text = value.strip().rstrip("/")
+    if OWNER_REPO_RE.match(text):
+        return text
+    m = re.match(r"^https?://(?:www\.)?github\.com/([^/\s]+)/([^/\s?#]+)", text, re.IGNORECASE)
+    if not m:
+        return None
+    repo = m.group(2)
+    if repo.endswith(".git"):
+        repo = repo[: -len(".git")]
+    full_name = f"{m.group(1)}/{repo}"
+    if not OWNER_REPO_RE.match(full_name):
+        return None
+    return full_name
 
 
 def _read_private_key(path: str) -> str:
@@ -90,6 +115,46 @@ def get_installation_token(
     res.raise_for_status()
     data = res.json()
     return data["token"], data.get("expires_at", "")
+
+
+def get_repo_installation_id(
+    api_url: str,
+    app_id: str,
+    private_key_path: str,
+    owner: str,
+    repo: str,
+) -> int:
+    """Return the GitHub App installation ID for a repository.
+
+    Uses the App JWT (installation tokens are scoped to an installation, so
+    the installation must be looked up first). Raises GithubNotConfigured
+    when App credentials are absent; other HTTP/API errors propagate.
+    """
+    if not app_id or not private_key_path:
+        raise GithubNotConfigured("GITHUB_APP_ID / GITHUB_APP_PRIVATE_KEY_PATH not set")
+    app_jwt = mint_app_jwt(app_id, private_key_path)
+    res = httpx.get(
+        f"{api_url}/repos/{owner}/{repo}/installation",
+        headers={"Authorization": f"Bearer {app_jwt}", "Accept": "application/vnd.github+json"},
+        timeout=15,
+    )
+    if res.status_code == 404:
+        raise GithubNotConfigured(f"GitHub App is not installed on {owner}/{repo}")
+    res.raise_for_status()
+    return int(res.json()["id"])
+
+
+def extract_installation_id(payload: dict) -> int | None:
+    """Read the installation ID GitHub attaches to webhook deliveries.
+
+    Returns None when the payload carries no usable ID (never raises — a
+    missing ID simply leaves the stored value unchanged).
+    """
+    inst = payload.get("installation") if isinstance(payload, dict) else None
+    raw = inst.get("id") if isinstance(inst, dict) else None
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        return None
+    return raw
 
 
 def verify_fork(api_url: str, full_name: str, base_repo: str) -> tuple[bool, str]:

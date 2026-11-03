@@ -20,6 +20,7 @@ from app.models import (
     User,
 )
 from app.schemas import CheckInOut, EnrollmentOut, NotificationOut, ProgressOut, RetroOut
+from app.task_state import effective_blocked_reason, resolve_statuses
 
 router = APIRouter(tags=["progress"])
 
@@ -47,10 +48,12 @@ def get_progress(
     sprints = db.scalars(select(Sprint)).all()
     sprint_ids = {s.id for s in sprints}
     tasks = db.scalars(select(Task).where(Task.sprint_id.in_(sprint_ids))).all() if sprint_ids else []
+    effective, _ = resolve_statuses(db, current_user.id, tasks)
 
     by_status: dict[str, int] = {s.value: 0 for s in TaskStatus}
     for t in tasks:
-        by_status[t.status.value] = by_status.get(t.status.value, 0) + 1
+        st = effective[t.id].value
+        by_status[st] = by_status.get(st, 0) + 1
 
     enrollments = db.scalars(select(Enrollment).where(Enrollment.user_id == current_user.id)).all()
     events = db.scalars(
@@ -96,8 +99,9 @@ def manager_check_in(
         select(Standup).where(Standup.user_id == current_user.id, Standup.status == "confirmed")
     ).all()
     tasks = db.scalars(select(Task)).all()
-    blocked = [t.key for t in tasks if t.blocked_reason]
-    in_review = sum(1 for t in tasks if t.status == TaskStatus.in_review)
+    effective, states = resolve_statuses(db, current_user.id, tasks)
+    blocked = [t.key for t in tasks if effective_blocked_reason(t, states)]
+    in_review = sum(1 for t in tasks if effective[t.id] == TaskStatus.in_review)
     comps = db.scalars(
         select(Competency).where(Competency.user_id == current_user.id).order_by(Competency.score.desc())
     ).all()
@@ -108,7 +112,12 @@ def manager_check_in(
     if standups:
         highlights.append(f"{len(standups)} standup{'s' if len(standups) != 1 else ''} confirmed.")
     if comps:
-        top = ", ".join(f"{c.skill.replace('_', ' ')} ({c.score})" for c in comps[:3])
+        acronyms = {"ai": "AI", "api": "API", "apis": "APIs", "pr": "PR"}
+        top = ", ".join(
+            " ".join(acronyms.get(w.lower(), w.capitalize()) for w in c.skill.replace("_", " ").split())
+            + f" ({c.score})"
+            for c in comps[:3]
+        )
         highlights.append(f"Strongest skill evidence: {top}.")
     if not highlights:
         highlights.append("No approvals or standups yet — the journey starts with onboarding and the first ticket.")
@@ -146,7 +155,12 @@ def sprint_retrospective(
         select(Standup).where(Standup.user_id == current_user.id, Standup.status == "confirmed")
     ).all()
     tasks = db.scalars(select(Task)).all()
-    open_blockers = [f"{t.key}: {t.blocked_reason}" for t in tasks if t.blocked_reason]
+    _, retro_states = resolve_statuses(db, current_user.id, tasks)
+    open_blockers = [
+        f"{t.key}: {reason}"
+        for t in tasks
+        if (reason := effective_blocked_reason(t, retro_states))
+    ]
 
     notes: list[str] = []
     if standups:

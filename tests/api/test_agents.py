@@ -165,3 +165,17 @@ def test_mock_replies_are_labeled():
     )
     assert out.mock is True
     assert out.text.startswith("[mock]")
+
+
+def test_provider_status_reports_voice_capability(client, auth_headers):
+    res = client.get("/api/agents/provider", headers=auth_headers)
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["mock"] is True
+    assert body["model"] == "mock-teammate-v1"
+    assert body["stt_mock"] is True
+    assert body["tts_mock"] is True
+
+
+def test_provider_status_requires_auth(client):
+    assert client.get("/api/agents/provider").status_code == 401

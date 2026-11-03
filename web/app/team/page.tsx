@@ -5,7 +5,14 @@ import { AppShell } from "@/components/app-shell";
 import { TeamChat } from "@/components/team-chat";
 import { api } from "@/lib/api";
 
-type Me = { email: string };
+type Me = { email: string; full_name: string | null };
+
+function displayName(me: Me | null): string {
+  const first = me?.full_name?.trim().split(/\s+/)[0];
+  if (first) return first;
+  if (me?.email) return me.email.split("@")[0];
+  return "You";
+}
 
 export default function TeamPage() {
   const [me, setMe] = useState<Me | null>(null);
@@ -17,11 +24,11 @@ export default function TeamPage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Direct messages</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Team chat</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Team chat</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Five AI teammates plus a separate Learning Assistant. Pick a teammate on the left — their chat loads on the right.
+        Chat with your AI engineering team — pick someone on the left to start talking.
       </p>
-      <TeamChat youName={me?.email ? me.email.split("@")[0] : "You"} />
+      <TeamChat youName={displayName(me)} />
     </AppShell>
   );
 }

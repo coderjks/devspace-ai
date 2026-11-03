@@ -146,4 +146,4 @@ for help.
   never commit them (they're already gitignored).
 - Don't run `git push` or merge branches — the maintainer handles that.
 - Never paste API keys or secrets into the terminal where they'd be saved;
-  keys go in `api/.env` (gitignored) or as environment variables.
+  keys go in the repo-root `.env` (gitignored) or as environment variables.

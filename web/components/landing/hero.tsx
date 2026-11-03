@@ -125,9 +125,6 @@ export function Hero() {
           </div>
         </div>
       </div>
-      <p className="relative mx-auto w-full max-w-7xl px-6 pb-4 text-xs text-muted-foreground">
-        Dashboard preview uses illustrative sample data — not live student work.
-      </p>
     </section>
   );
 }

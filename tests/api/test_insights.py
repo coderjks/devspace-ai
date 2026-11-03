@@ -21,16 +21,12 @@ def _no_real_queue(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _restore_global_task_statuses(db_session):
-    # Approvals mutate shared sprint task statuses: snapshot and restore.
-    from app.models import Task as _Task
+def _clean_user_task_states(db_session):
+    # Board positions are per-student rows now: drop them after each test.
+    from app.models import UserTaskState as _UTS
 
-    snapshot = {t.id: t.status for t in db_session.query(_Task).all()}
     yield
-    for tid, status in snapshot.items():
-        row = db_session.query(_Task).filter(_Task.id == tid).first()
-        if row is not None:
-            row.status = status
+    db_session.query(_UTS).delete()
     db_session.commit()
 
 

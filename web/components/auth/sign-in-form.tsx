@@ -10,7 +10,7 @@ import { PasswordField } from "./password-field";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-export function SignInForm() {
+export function SignInForm({ nextPath }: { nextPath?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,9 +47,13 @@ export function SignInForm() {
       }
       if (data.access_token) localStorage.setItem("devspace_token", data.access_token);
       setDone(true);
-      router.push("/dashboard");
+      router.push(nextPath ?? "/dashboard");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Sign in failed.");
+      if (err instanceof TypeError) {
+        setFormError("Can't reach the server. Is the API running? See Help for setup steps.");
+      } else {
+        setFormError(err instanceof Error ? err.message : "Sign in failed.");
+      }
     } finally {
       setLoading(false);
     }

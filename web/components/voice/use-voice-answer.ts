@@ -1,0 +1,169 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { API_BASE } from "@/lib/utils";
+import { api, authHeaders } from "@/lib/api";
+import { blobToWav16k } from "@/lib/audio-to-wav";
+import { useProviderStatus } from "@/lib/provider-status";
+
+export const STT_UNAVAILABLE_MSG =
+  "Voice transcription isn't connected yet (no STT provider). Type instead — your words go through the same review.";
+
+/**
+ * Per-answer dictation backed by the real voice pipeline (session → turn →
+ * transcript). The transcript always lands in an editable field — voice never
+ * submits anything by itself. Consent is captured inline before the mic opens.
+ */
+const CONSENT_KEY = "devspace_voice_consent";
+
+function storedConsent(): boolean {
+  try {
+    return window.localStorage.getItem(CONSENT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function useVoiceAnswer(
+  onTranscript: (key: string, text: string) => void,
+  opts?: { persona?: string }
+) {
+  const [consented, setConsentedState] = useState(storedConsent);
+  const setConsented = useCallback((value: boolean) => {
+    setConsentedState(value);
+    try {
+      if (value) window.localStorage.setItem(CONSENT_KEY, "1");
+      else window.localStorage.removeItem(CONSENT_KEY);
+    } catch {
+      /* private mode — consent simply won't persist */
+    }
+  }, []);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [recordingKey, setRecordingKey] = useState<string | null>(null);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  const [secs, setSecs] = useState(0);
+  const [busy, setBusy] = useState(false);
+  // Which answer is being transcribed: pages with one mic per question must
+  // spin only the tapped button, not every mic on screen.
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<number | null>(null);
+  const onTranscriptRef = useRef(onTranscript);
+  onTranscriptRef.current = onTranscript;
+  const provider = useProviderStatus();
+  const sttReady = provider ? !provider.stt_mock : null;
+  const sessionPersona = opts?.persona ?? "scrum-master";
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+      recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
+    },
+    []
+  );
+
+  const stopTracks = useCallback(() => {
+    if (timerRef.current) window.clearInterval(timerRef.current);
+    recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
+    setRecordingKey(null);
+    setMicStream(null);
+  }, []);
+
+  const upload = useCallback(
+    // sid/key arrive as arguments captured at record time: the state values
+    // are stale inside the recorder's onstop closure on the very first tap
+    // (no session exists yet), which silently dropped the first recording.
+    async (sid: string | null, key: string | null, blob: Blob) => {
+      stopTracks();
+      if (!sid || !key) {
+        setError("Recording wasn't linked to a session — try once more, or type instead.");
+        return;
+      }
+      if (blob.size === 0) {
+        setError("Nothing was recorded — check the microphone and try again, or type instead.");
+        return;
+      }
+      setBusy(true);
+      setBusyKey(key);
+      setError(null);
+      try {
+        const wav = await blobToWav16k(blob).catch(() => null);
+        if (!wav) throw new Error("Could not prepare the recording for transcription — type instead.");
+        const form = new FormData();
+        form.append("audio", wav, "turn.wav");
+        const res = await fetch(`${API_BASE}/api/voice/sessions/${sid}/turns`, {
+          method: "POST",
+          body: form,
+          credentials: "include",
+          headers: { ...authHeaders() },
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail ?? `Upload failed (${res.status})`);
+        const turn = (await res.json()) as { transcript: string };
+        if (turn.transcript.trim()) onTranscriptRef.current(key, turn.transcript.trim());
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Transcription failed — type instead.");
+      } finally {
+        setBusy(false);
+        setBusyKey(null);
+      }
+    },
+    [stopTracks]
+  );
+
+  const toggleRecord = useCallback(
+    async (key: string) => {
+      if (recordingKey === key) {
+        recorderRef.current?.stop();
+        return;
+      }
+      if (sttReady === false) {
+        setError(STT_UNAVAILABLE_MSG);
+        return;
+      }
+      setError(null);
+      let sid = sessionId;
+      if (!sid) {
+        setBusy(true);
+        try {
+          const s = await api<{ id: string }>("/api/voice/sessions", {
+            method: "POST",
+            body: JSON.stringify({ persona: sessionPersona, language_hint: "en", consent: true }),
+          });
+          sid = s.id;
+          setSessionId(sid);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Could not start voice session");
+          setBusy(false);
+          return;
+        }
+        setBusy(false);
+      }
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        setError("Microphone permission was denied. Allow access in the browser, or type instead.");
+        return;
+      }
+      const rec = new MediaRecorder(stream);
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      // Capture the fresh sid/key here: by stop time the state values may
+      // still hold the pre-session nulls from the first tap.
+      rec.onstop = () => upload(sid, key, new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" }));
+      recorderRef.current = rec;
+      rec.start();
+      setMicStream(stream);
+      setRecordingKey(key);
+      setSecs(0);
+      timerRef.current = window.setInterval(() => setSecs((s) => s + 1), 1000);
+    },
+    [recordingKey, sessionId, sttReady, upload, sessionPersona]
+  );
+
+  return { consented, setConsented, recordingKey, micStream, secs, busy, busyKey, error, toggleRecord, stopTracks, sttReady };
+}

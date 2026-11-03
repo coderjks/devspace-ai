@@ -1,12 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SignInForm } from "./sign-in-form";
 import { SignUpForm } from "./sign-up-form";
 
+/** Only allow internal return paths (blocks open-redirect and login-loop targets). */
+function safeNextPath(raw: string | null): string | undefined {
+  if (!raw) return undefined;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return undefined;
+  if (raw === "/login" || raw.startsWith("/login?")) return undefined;
+  return raw;
+}
+
 export function AuthCard() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const searchParams = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get("next"));
   return (
     <div className="w-full rounded-xl border border-border bg-card p-6 text-card-foreground md:p-8">
       <div role="tablist" aria-label="Authentication mode" className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
@@ -38,7 +49,7 @@ export function AuthCard() {
         </p>
       </div>
       <div key={mode} role="tabpanel" className="mt-6 animate-fade-in">
-        {mode === "signin" ? <SignInForm /> : <SignUpForm />}
+        {mode === "signin" ? <SignInForm nextPath={nextPath} /> : <SignUpForm nextPath={nextPath} />}
       </div>
       <p className="mt-5 text-center text-sm text-muted-foreground">
         {mode === "signin" ? (

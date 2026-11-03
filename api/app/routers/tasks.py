@@ -6,6 +6,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import ActivityEvent, Sprint, Task, TaskStatus, User
 from app.schemas import TaskDependencyOut, TaskDetailOut, TaskOut, TaskTransitionIn
+from app.task_state import effective_blocked_reason, resolve_statuses, upsert_state
 
 router = APIRouter(tags=["tasks"])
 
@@ -43,7 +44,7 @@ def _task_out(task: Task, key_by_id: dict[str, str]) -> TaskOut:
     )
 
 
-def _load_task(db: Session, task_id: str) -> tuple[Task, TaskOut, str]:
+def _load_task(db: Session, user_id: str, task_id: str) -> tuple[Task, TaskOut, str]:
     task = db.scalar(
         select(Task).where(Task.id == task_id).options(joinedload(Task.dependencies))
     )
@@ -52,7 +53,11 @@ def _load_task(db: Session, task_id: str) -> tuple[Task, TaskOut, str]:
     sprint = db.get(Sprint, task.sprint_id)
     siblings = db.scalars(select(Task).where(Task.sprint_id == task.sprint_id)).all()
     key_by_id = {t.id: t.key for t in siblings}
-    return task, _task_out(task, key_by_id), (sprint.name if sprint else "")
+    effective, states = resolve_statuses(db, user_id, siblings)
+    out = _task_out(task, key_by_id)
+    out.status = effective[task.id]
+    out.blocked_reason = effective_blocked_reason(task, states)
+    return task, out, (sprint.name if sprint else "")
 
 
 @router.get("/api/tasks/{task_id}", response_model=TaskDetailOut)
@@ -61,7 +66,7 @@ def get_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> TaskDetailOut:
-    task, detail, sprint_name = _load_task(db, task_id)
+    task, detail, sprint_name = _load_task(db, current_user.id, task_id)
     return TaskDetailOut(**detail.model_dump(), sprint_id=task.sprint_id, sprint_name=sprint_name)
 
 
@@ -81,21 +86,21 @@ def transition_task(
             status_code=status.HTTP_409_CONFLICT,
             detail="Tasks cannot be marked approved manually; approval requires a passing evaluation",
         )
-    task, _, _ = _load_task(db, task_id)
-    allowed = ALLOWED_TRANSITIONS.get(task.status, set())
+    task, detail, _ = _load_task(db, current_user.id, task_id)
+    current = detail.status
+    allowed = ALLOWED_TRANSITIONS.get(current, set())
     if target not in allowed:
-        if task.status == TaskStatus.locked:
+        if current == TaskStatus.locked:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Task is locked; complete its prerequisite tasks first",
             )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Transition from {task.status.value} to {target.value} is not allowed",
+            detail=f"Transition from {current.value} to {target.value} is not allowed",
         )
-    previous = task.status
-    task.status = target
-    db.add(task)
+    previous = current
+    upsert_state(db, current_user.id, task.id, target)
     db.add(
         ActivityEvent(
             user_id=current_user.id,
@@ -108,5 +113,5 @@ def transition_task(
     )
     db.commit()
     db.refresh(task)
-    task, detail, sprint_name = _load_task(db, task_id)
+    task, detail, sprint_name = _load_task(db, current_user.id, task_id)
     return TaskDetailOut(**detail.model_dump(), sprint_id=task.sprint_id, sprint_name=sprint_name)

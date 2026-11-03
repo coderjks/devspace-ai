@@ -29,7 +29,7 @@ export default function HelpPage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Resources</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Help & setup</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Help & setup</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
         New here and never touched Git? Start at Step 1 and work down — by Step 4
         you&apos;ll have your sprint repo and know how to submit work.
@@ -51,7 +51,6 @@ export default function HelpPage() {
               {" → "}<Link href="/team" className="font-medium text-primary hover:underline">Team chat</Link>
               {" → "}<Link href="/standup" className="font-medium text-primary hover:underline">Standup</Link>
               {" → "}<Link href="/github" className="font-medium text-primary hover:underline">GitHub</Link>
-              {" → "}<Link href="/voice" className="font-medium text-primary hover:underline">Voice</Link>
               {" → "}<Link href="/progression" className="font-medium text-primary hover:underline">Progression</Link>.
             </p>
           </CardContent>
@@ -151,7 +150,7 @@ export default function HelpPage() {
           </CardHeader>
           <CardContent>
             <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-              <li>Post your <Link href="/standup" className="font-medium text-primary hover:underline">daily standup</Link> (text or <Link href="/voice" className="font-medium text-primary hover:underline">voice</Link>) before starting work.</li>
+              <li>Post your <Link href="/standup" className="font-medium text-primary hover:underline">daily standup</Link> (type or dictate by voice) before starting work.</li>
               <li>Stuck? Ask a teammate in <Link href="/team" className="font-medium text-primary hover:underline">Team chat</Link> — start with the Tech Lead for code, QA Engineer for tests.</li>
               <li>Before each session: <Code>git pull</Code> on your branch to stay up to date.</li>
               <li>Running DevSpace itself locally (Docker, Python, Node)? The full zero-to-running guide is <Code>docs/setup-guide.md</Code> in the repository.</li>

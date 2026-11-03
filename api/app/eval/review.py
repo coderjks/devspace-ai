@@ -56,7 +56,25 @@ def validate_review(data: dict, sha: str) -> tuple[dict | None, str | None]:
 
 
 def mock_review(sha: str, checks_summary: str) -> dict:
-    """Clearly labeled mock review: zero findings, never an approval."""
-    review = empty_review(True, sha, f"Mock review (no live model). Static checks: {checks_summary}.")
+    """Clearly labeled mock review: zero findings, never an approval.
+
+    The summary stays in plain student language — internal check names from
+    ``checks_summary`` are reduced to counts, never quoted.
+    """
+    parts = [p.strip() for p in checks_summary.split(";") if p.strip()]
+    passed = sum(1 for p in parts if p.endswith("=pass"))
+    failed = sum(1 for p in parts if p.endswith("=fail"))
+    skipped = len(parts) - passed - failed
+    bits = []
+    if passed:
+        bits.append(f"{passed} passed")
+    if failed:
+        bits.append(f"{failed} need attention")
+    if skipped:
+        bits.append(f"{skipped} couldn't run")
+    summary = "Practice review while the live reviewer is off."
+    if bits:
+        summary += " Automated checks: " + ", ".join(bits) + "."
+    review = empty_review(True, sha, summary)
     review["model_version"] = MOCK_MODEL_VERSION
     return review

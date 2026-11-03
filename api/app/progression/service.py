@@ -26,7 +26,6 @@ from app.models import (
     Submission,
     Task,
     TaskDependency,
-    TaskStatus,
 )
 
 POLICY_VERSION = "policy-1"
@@ -162,23 +161,25 @@ def _credit_competencies(db: Session, user_id: str, task: Task | None, checks: l
         row.evidence_count += 1
 
 
-def _unlock_dependents(db: Session, task: Task) -> list[str]:
-    """Unlock dependents whose prerequisites are ALL approved. Returns unlocked keys."""
+def _newly_unlocked_keys(db: Session, user_id: str, task: Task) -> list[str]:
+    """Keys of dependents that become available to this student now.
+
+    A dependent unlocks for a student when every prerequisite is approved by
+    that student. Called right after their first approval of ``task``, so any
+    dependent listing ``task`` among fully-approved prerequisites is newly
+    unlocked. Nothing is written: unlock is derived, never stored globally.
+    """
+    from app.task_state import approved_task_ids
+
+    approved = approved_task_ids(db, user_id)
     unlocked: list[str] = []
     dependents = db.query(TaskDependency).filter(TaskDependency.depends_on_task_id == task.id).all()
     for dep in dependents:
         child = db.query(Task).filter(Task.id == dep.task_id).first()
-        if child is None or child.status != TaskStatus.locked:
+        if child is None:
             continue
         prereqs = db.query(TaskDependency).filter(TaskDependency.task_id == child.id).all()
-        all_approved = True
-        for pre in prereqs:
-            pt = db.query(Task).filter(Task.id == pre.depends_on_task_id).first()
-            if pt is None or pt.status != TaskStatus.approved:
-                all_approved = False
-                break
-        if all_approved:
-            child.status = TaskStatus.todo
+        if prereqs and all(pre.depends_on_task_id in approved for pre in prereqs):
             unlocked.append(child.key)
     return unlocked
 
@@ -231,10 +232,23 @@ def request_approval(db: Session, user_id: str, submission_id: str, idempotency_
     unlocked: list[str] = []
     if decision == "approved":
         task = db.query(Task).filter(Task.id == submission.task_id).first()
-        if task is not None and task.status != TaskStatus.approved:
-            task.status = TaskStatus.approved
         if task is not None:
-            unlocked = _unlock_dependents(db, task)
+            # Only the first approval of a task unlocks its dependents; a
+            # re-approval reports nothing new (matches the old global rule
+            # where already-unlocked children were skipped).
+            prior = (
+                db.query(Approval)
+                .join(Submission, Approval.submission_id == Submission.id)
+                .filter(
+                    Submission.user_id == user_id,
+                    Submission.task_id == submission.task_id,
+                    Approval.decision == "approved",
+                    Approval.id != approval.id,
+                )
+                .first()
+            )
+            if prior is None:
+                unlocked = _newly_unlocked_keys(db, user_id, task)
             _credit_competencies(db, user_id, task, (evaluation.test_results or {}).get("checks", []))
     else:
         findings_text = "; ".join(

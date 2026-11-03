@@ -47,6 +47,7 @@ class Settings(BaseSettings):
 
     stt_provider: str = Field(default="mock", alias="STT_PROVIDER")
     stt_api_key: str = Field(default="", alias="STT_API_KEY")
+    stt_model: str = Field(default="muse-voice-transcribe-1.0", alias="STT_MODEL")
     tts_provider: str = Field(default="mock", alias="TTS_PROVIDER")
     tts_api_key: str = Field(default="", alias="TTS_API_KEY")
     voice_max_bytes: int = Field(default=2 * 1024 * 1024, alias="VOICE_MAX_BYTES")

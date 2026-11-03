@@ -56,6 +56,7 @@ def system_events_source(db: Session, user: User) -> list[SystemEventOut]:
             action=r.action,
             object_type=r.object_type,
             object_id=r.object_id,
+            payload=r.payload or {},
             created_at=r.created_at,
         )
         for r in rows

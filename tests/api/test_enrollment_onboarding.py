@@ -73,6 +73,56 @@ def test_profile_update(client):
     assert client.patch("/api/users/me", headers=headers, json={"full_name": ""}).status_code == 422
 
 
+def test_password_change_and_login_with_new(client):
+    email = _unique_email()
+    token = _register(client, email)
+    headers = {"Authorization": f"Bearer {token}"}
+    res = client.patch(
+        "/api/users/me/password",
+        headers=headers,
+        json={"current_password": "SecurePass123!", "new_password": "EvenMoreSecure456!"},
+    )
+    assert res.status_code == 200, res.text
+    # Old password stops working, new password works.
+    assert client.post("/api/auth/login", json={"email": email, "password": "SecurePass123!"}).status_code == 401
+    ok = client.post("/api/auth/login", json={"email": email, "password": "EvenMoreSecure456!"})
+    assert ok.status_code == 200
+
+
+def test_password_change_rejects_wrong_current_and_short_new(client):
+    token = _register(client, _unique_email())
+    headers = {"Authorization": f"Bearer {token}"}
+    wrong = client.patch(
+        "/api/users/me/password",
+        headers=headers,
+        json={"current_password": "not-the-password", "new_password": "EvenMoreSecure456!"},
+    )
+    assert wrong.status_code == 401
+    short = client.patch(
+        "/api/users/me/password",
+        headers=headers,
+        json={"current_password": "SecurePass123!", "new_password": "short"},
+    )
+    assert short.status_code == 422
+
+
+def test_enrollment_skill_update(client):
+    token = _register(client, _unique_email())
+    headers = {"Authorization": f"Bearer {token}"}
+    # No enrollment yet: 404, not a silent no-op.
+    assert client.patch("/api/enrollments/me", headers=headers, json={"skill_level": "advanced"}).status_code == 404
+    created = client.post(
+        "/api/enrollments",
+        headers=headers,
+        json={"track": "applied-ai-engineering", "skill_level": "beginner"},
+    )
+    assert created.status_code == 201
+    updated = client.patch("/api/enrollments/me", headers=headers, json={"skill_level": "advanced"})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["skill_level"] == "advanced"
+    assert client.patch("/api/enrollments/me", headers=headers, json={"skill_level": "guru"}).status_code == 422
+
+
 def test_diagnostic_questions_hide_answers(client, auth_headers):
     res = client.get("/api/diagnostics/questions", headers=auth_headers)
     assert res.status_code == 200

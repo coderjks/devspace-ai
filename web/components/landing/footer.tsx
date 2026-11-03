@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 const PRODUCT = [
   { href: "#how-it-works", label: "How It Works" },
@@ -14,9 +15,7 @@ export function Footer() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-12 md:flex-row md:items-start md:justify-between">
         <div className="max-w-xs">
           <p className="flex items-center gap-2">
-            <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground">
-              D
-            </span>
+            <Logo size="md" />
             <span className="text-[15px] font-bold tracking-tight text-foreground">DevSpace AI</span>
           </p>
           <p className="mt-3 text-xs leading-5 text-muted-foreground">

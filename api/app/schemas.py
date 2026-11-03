@@ -103,6 +103,23 @@ class ProfileUpdate(BaseModel):
     full_name: str = Field(min_length=1, max_length=200)
 
 
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ProviderStatusOut(BaseModel):
+    provider: str
+    mock: bool
+    model: str
+    stt_mock: bool = True
+    tts_mock: bool = True
+
+
+class EnrollmentSkillUpdate(BaseModel):
+    skill_level: str = Field(min_length=1, max_length=50)
+
+
 class DiagnosticQuestionOut(BaseModel):
     id: str
     prompt: str
@@ -236,6 +253,7 @@ class SystemEventOut(BaseModel):
     action: str
     object_type: str | None
     object_id: str | None
+    payload: dict = {}
     created_at: datetime
 
 
@@ -288,6 +306,13 @@ class GithubReposOut(BaseModel):
     app_configured: bool
     base_repo: str | None = None
     repos: list[RepositoryOut] = []
+
+
+class OpenPullRequest(BaseModel):
+    number: int
+    title: str
+    head_sha: str
+    html_url: str
 
 
 class SubmissionCreateIn(BaseModel):
@@ -456,3 +481,44 @@ class VoiceSubmitOut(BaseModel):
     reply_mock: bool = True
     audio_wav_base64: str | None = None
     audio_mock: bool = True
+
+
+class CertificateSkillOut(BaseModel):
+    skill: str
+    score: int
+    evidence_count: int
+
+
+class CertificateProgramOut(BaseModel):
+    sprint: str = ""
+    tickets_approved: int = 0
+    tickets_total: int = 0
+
+
+class CertificateOut(BaseModel):
+    id: str
+    track: str
+    recipient_name: str
+    skills: list[CertificateSkillOut] = []
+    program: CertificateProgramOut = CertificateProgramOut()
+    issued_at: datetime
+    # Full public credential (code.signature) for the QR. Only ever exposed
+    # to the certificate owner; the verify endpoint never returns it.
+    credential: str
+
+
+class MyCertificateOut(BaseModel):
+    certificate: CertificateOut | None = None
+    eligible: bool = False
+    approved: int = 0
+    total: int = 0
+    remaining: list[str] = []
+
+
+class VerifyCertificateOut(BaseModel):
+    valid: bool = False
+    recipient_name: str | None = None
+    track: str | None = None
+    issued_at: datetime | None = None
+    skills: list[CertificateSkillOut] = []
+    program: CertificateProgramOut = CertificateProgramOut()

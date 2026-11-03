@@ -94,3 +94,22 @@ def test_no_mock_rows_anywhere(client, section):
     feed = client.get("/api/activity", headers=headers).json()
     for entry in feed[section]:
         assert entry["id"] and entry.get("created_at")
+
+
+def test_transition_events_carry_human_task_key(client):
+    # The activity log must show the ticket key (AI-001), never the raw
+    # internal task UUID.
+    headers = _register(client, "transition-key@test.local")
+    _enroll(client, headers)
+    tasks = client.get("/api/sprints/current", headers=headers).json()["tasks"]
+    tid = next(t["id"] for t in tasks if t["key"] == "AI-001")
+    res = client.post(f"/api/tasks/{tid}/transitions", json={"to_status": "in_progress"}, headers=headers)
+    assert res.status_code == 200, res.text
+
+    feed = client.get("/api/activity", headers=headers).json()
+    trans = [e for e in feed["system_events"] if e["action"] == "task.transition"]
+    assert trans, "transition must be audited"
+    payload = trans[0]["payload"]
+    assert payload["key"] == "AI-001"
+    assert payload["from"] == "todo"
+    assert payload["to"] == "in_progress"

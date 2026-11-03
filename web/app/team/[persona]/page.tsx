@@ -8,7 +8,14 @@ import { AppShell } from "@/components/app-shell";
 import { TeamChat } from "@/components/team-chat";
 import { api } from "@/lib/api";
 
-type Me = { email: string };
+type Me = { email: string; full_name: string | null };
+
+function displayName(me: Me | null): string {
+  const first = me?.full_name?.trim().split(/\s+/)[0];
+  if (first) return first;
+  if (me?.email) return me.email.split("@")[0];
+  return "You";
+}
 
 const KNOWN = new Set([
   "engineering-manager",
@@ -38,8 +45,8 @@ export default function ChatPage({ params }: { params: { persona: string } }) {
       ) : (
         <>
           <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Direct messages</p>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Team chat</h1>
-          <TeamChat initialPersona={persona} youName={me?.email ? me.email.split("@")[0] : "You"} />
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Team chat</h1>
+          <TeamChat initialPersona={persona} youName={displayName(me)} />
         </>
       )}
     </AppShell>

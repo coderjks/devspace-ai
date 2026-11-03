@@ -1,5 +1,5 @@
 import { CheckCircle2, Circle, Clock3, Eye, Lock, type LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, humanize } from "@/lib/utils";
 
 const TONES: Record<string, { label: string; icon: LucideIcon; className: string }> = {
   locked: {
@@ -31,7 +31,7 @@ const TONES: Record<string, { label: string; icon: LucideIcon; className: string
 
 /** Status pill with icon + label. Never color alone: the icon and text always pair. */
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
-  const tone = TONES[status] ?? { label: status.replace(/_/g, " "), icon: Circle, className: "bg-muted text-muted-foreground" };
+  const tone = TONES[status] ?? { label: humanize(status), icon: Circle, className: "bg-muted text-muted-foreground" };
   const Icon = tone.icon;
   return (
     <span

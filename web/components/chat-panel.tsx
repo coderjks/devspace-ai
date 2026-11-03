@@ -1,13 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Mic, Send } from "lucide-react";
+import { Loader2, Mic, Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { TeammateAvatar } from "@/components/ui/teammate-avatar";
+import { STT_UNAVAILABLE_MSG, useVoiceAnswer } from "@/components/voice/use-voice-answer";
+import { ChatMarkdown } from "@/components/chat-markdown";
+import { VoiceWaveform } from "@/components/voice/voice-waveform";
+import { useProviderStatus } from "@/lib/provider-status";
 import { api } from "@/lib/api";
 
 type Message = { id: string; role: string; content: string; created_at: string };
@@ -21,8 +24,6 @@ const PERSONA_LABELS: Record<string, string> = {
   "scrum-master": "Scrum Master",
   "learning-assistant": "Learning Assistant",
 };
-
-const VOICE_PERSONAS = new Set(["tech-lead", "scrum-master"]);
 
 function formatTime(iso: string): string {
   if (!iso) return "";
@@ -62,8 +63,17 @@ export function ChatPanel({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [isMock, setIsMock] = useState(true);
+  const provider = useProviderStatus();
+  // Live status wins once loaded; the per-reply flag only matters before that.
+  const showMock = provider ? provider.mock : isMock;
   const [error, setError] = useState<string | null>(null);
+  const [wantMic, setWantMic] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const voice = useVoiceAnswer(
+    (_key, text) => setDraft((d) => (d ? `${d} ${text}` : text).slice(0, 4000)),
+    { persona }
+  );
+  const recording = voice.recordingKey === "chat";
 
   const loadMessages = useCallback(async (convId: string | null) => {
     if (!convId) {
@@ -132,23 +142,15 @@ export function ChatPanel({
             {teammateName}
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <span aria-hidden className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-              active
+              Active
             </span>
           </h2>
           <p className="truncate text-xs text-muted-foreground">{teammateRole}</p>
         </div>
-        {isMock ? (
+        {showMock ? (
           <span className="hidden shrink-0 rounded-full bg-warning/15 px-2.5 py-1 text-xs font-medium text-warning sm:inline-block">
-            mock
+            Mock
           </span>
-        ) : null}
-        {VOICE_PERSONAS.has(persona) ? (
-          <Button variant="outline" size="sm" asChild className="shrink-0">
-            <Link href="/voice" aria-label={`Talk to ${teammateName} by voice`}>
-              <Mic size={15} aria-hidden />
-              <span className="hidden sm:inline">Voice</span>
-            </Link>
-          </Button>
         ) : null}
       </div>
       {loading ? (
@@ -200,7 +202,9 @@ export function ChatPanel({
                         <span className="text-sm font-bold">{mine ? youName : teammateName}</span>
                         <span className="text-xs text-muted-foreground">{formatTime(m.created_at)}</span>
                       </p>
-                      <p className="mt-0.5 whitespace-pre-wrap text-sm leading-6">{m.content}</p>
+                      <div className="mt-0.5">
+                        <ChatMarkdown text={m.content} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -217,8 +221,20 @@ export function ChatPanel({
                 <div className="flex-1">
                   <p className="flex items-baseline gap-x-2">
                     <span className="text-sm font-bold">{teammateName}</span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      typing <Loader2 size={11} aria-hidden className="animate-spin" />
+                    <span
+                      className="flex items-center gap-1"
+                      role="status"
+                      aria-label={`${teammateName} is typing`}
+                    >
+                      <span className="sr-only">{teammateName} is typing</span>
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          aria-hidden
+                          className="h-1.5 w-1.5 rounded-full bg-muted-foreground motion-safe:animate-bounce"
+                          style={{ animationDelay: `${i * 150}ms` }}
+                        />
+                      ))}
                     </span>
                   </p>
                 </div>
@@ -233,6 +249,22 @@ export function ChatPanel({
               void send();
             }}
           >
+            {!voice.consented && wantMic ? (
+              <div className="mb-2 rounded-lg border border-border bg-muted/40 p-2.5 text-sm">
+                <label className="flex cursor-pointer items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={voice.consented}
+                    onChange={(e) => voice.setConsented(e.target.checked)}
+                    className="mt-1"
+                  />
+                  <span>
+                    I consent to voice processing for this chat. Transcripts are editable drafts;
+                    raw audio is never stored.
+                  </span>
+                </label>
+              </div>
+            ) : null}
             <div className="flex items-end gap-2 rounded-xl border border-input bg-background px-3 py-2 focus-within:ring-2 focus-within:ring-ring">
               <label htmlFor={`chat-input-${persona}`} className="sr-only">Message {teammateName}</label>
               <Input
@@ -244,11 +276,56 @@ export function ChatPanel({
                 disabled={sending}
                 className="border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
               />
-              <Button type="submit" size="sm" disabled={sending || !draft.trim()} aria-busy={sending}>
+              {voice.busyKey === "chat" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  aria-label="Transcribing your voice"
+                  title="Transcribing your voice — your words will appear above for review"
+                >
+                  <Loader2 size={15} aria-hidden className="animate-spin" />
+                </Button>
+              ) : (
+              <Button
+                type="button"
+                variant={recording ? "destructive" : "outline"}
+                size="sm"
+                disabled={voice.sttReady === false}
+                onClick={() => {
+                  if (!voice.consented) {
+                    setWantMic(true);
+                    return;
+                  }
+                  void voice.toggleRecord("chat");
+                }}
+                aria-label={recording ? `Stop dictating to ${teammateName}` : `Dictate to ${teammateName} by voice`}
+                aria-pressed={recording}
+                title={voice.sttReady === false ? STT_UNAVAILABLE_MSG : recording ? "Stop and transcribe" : "Dictate by voice"}
+                className={recording ? "border-destructive" : undefined}
+              >
+                {recording ? <Square size={15} aria-hidden fill="currentColor" /> : <Mic size={15} aria-hidden />}
+                {recording ? <span className="tabular-nums">{voice.secs}s</span> : null}
+              </Button>
+              )}
+              <Button type="submit" size="sm" disabled={sending || voice.busyKey === "chat" || !draft.trim()} aria-busy={sending}>
                 {sending ? <Loader2 size={16} aria-hidden className="animate-spin" /> : <Send size={16} aria-hidden />}
                 <span className="sr-only">Send</span>
               </Button>
             </div>
+            {recording ? (
+              <div className="mt-2 flex items-center gap-3 rounded-lg bg-destructive/[0.06] px-3 py-2" role="status">
+                <VoiceWaveform stream={voice.micStream} bars={20} className="flex-1 text-destructive" />
+                <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                  Tap <Square size={11} aria-hidden className="inline" fill="currentColor" /> to transcribe — review before sending.
+                </span>
+              </div>
+            ) : null}
+            {voice.sttReady === false && !voice.error ? (
+              <p className="mt-1.5 px-1 text-xs text-muted-foreground">Voice transcription isn&apos;t connected yet — type instead.</p>
+            ) : null}
+            {voice.error ? <p role="alert" className="mt-1.5 px-1 text-xs text-destructive">{voice.error}</p> : null}
             {responsibilities ? <p className="mt-1.5 px-1 text-xs text-muted-foreground">{responsibilities}</p> : null}
           </form>
         </>

@@ -89,10 +89,9 @@ export default function GithubPage() {
   return (
     <AppShell email={me?.email}>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Repository access</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">GitHub Connection</h1>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">GitHub Connection</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Link your internship repository so pull requests map to sprint tickets. No fake OAuth — linking is explicit
-        and revocation is immediate.
+        Connect your repository so your pull requests count toward sprint tickets. You can unlink anytime.
       </p>
       {error ? <p role="alert" className="mt-3 text-sm text-destructive">{error}</p> : null}
       {status === null ? (
@@ -101,26 +100,70 @@ export default function GithubPage() {
           <Skeleton className="h-32 w-full rounded-xl" />
         </div>
       ) : (
-        <div className="mt-6 space-y-4">
-          <Card>
-            <CardHeader>
+        <div className="mt-6 grid items-start gap-4 lg:grid-cols-5">
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Github size={16} aria-hidden /> Connection status
+                <Github size={16} aria-hidden /> Get connected
               </CardTitle>
               <CardDescription>
-                {status.base_repo
-                  ? `Fork ${status.base_repo}, then link your fork below. Open pull requests from your fork against the base repository.`
-                  : status.app_configured
-                    ? "GitHub App is configured. Install it on your repository for automatic PR checks."
-                    : "Manual linking mode: the GitHub App is not installed yet, so paste your repository below and submit PRs by URL with an exact commit SHA."}
+                {status.app_configured ? "GitHub App connected." : "Manual mode — no App installed."}{" "}
+                {status.base_repo ? `PRs go from your fork to ${status.base_repo}.` : null}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                {status.app_configured ? "GitHub App connected" : "Manual mode — no App installed"}
-              </span>
+            <CardContent className="pt-0">
+              <ol className="space-y-1">
+                {[
+                  {
+                    n: 1,
+                    title: "Fork the base repo",
+                    hint: status.base_repo ? `Fork ${status.base_repo} on GitHub.` : "Create your working repository.",
+                    done: status.repos.length > 0,
+                    action: status.base_repo ? (
+                      <a href={`https://github.com/${status.base_repo}/fork`} target="_blank" rel="noreferrer" className="font-medium text-primary hover:underline">
+                        Fork on GitHub →
+                      </a>
+                    ) : null,
+                  },
+                  {
+                    n: 2,
+                    title: "Link your fork here",
+                    hint: "Paste owner/repo — never the base repo.",
+                    done: status.repos.length > 0,
+                    action: null,
+                  },
+                  {
+                    n: 3,
+                    title: "Open a pull request",
+                    hint: "From your fork, then submit it from a ticket.",
+                    done: (subs ?? []).length > 0,
+                    action: (
+                      <Link href="/board" className="font-medium text-primary hover:underline">
+                        Pick a ticket →
+                      </Link>
+                    ),
+                  },
+                ].map((s) => (
+                  <li key={s.n} className="flex gap-3 rounded-lg px-1 py-2">
+                    <span
+                      aria-hidden
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        s.done ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {s.done ? "✓" : s.n}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{s.title}</p>
+                      <p className="text-xs text-muted-foreground">{s.hint}</p>
+                      {s.action ? <p className="mt-0.5 text-xs">{s.action}</p> : null}
+                    </div>
+                  </li>
+                ))}
+              </ol>
             </CardContent>
           </Card>
+          <div className="space-y-4 lg:col-span-3">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -144,8 +187,8 @@ export default function GithubPage() {
                 <Input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="owner/repo"
-                  aria-label="Repository full name"
+                  placeholder="owner/repo or github.com URL"
+                  aria-label="Repository full name or GitHub URL"
                   className="sm:max-w-xs"
                 />
                 <Button onClick={link} disabled={busy || !fullName.trim()}>Link repository</Button>
@@ -167,9 +210,9 @@ export default function GithubPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-base">Submitted pull requests</CardTitle>
-              <CardDescription>Recorded from verified webhooks or manual submission. Evaluation lands in Phase 06.</CardDescription>
+              <CardDescription>Pull requests from your linked repositories.</CardDescription>
             </CardHeader>
             <CardContent>
               {subs === null ? (
@@ -197,6 +240,7 @@ export default function GithubPage() {
               )}
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
     </AppShell>

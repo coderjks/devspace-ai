@@ -229,6 +229,98 @@ def test_manual_submit_requires_linked_repo_and_sha(client, webhook_secret, fake
     assert fake_queue == []
 
 
+def test_webhook_persists_installation_id(client, webhook_secret, fake_queue):
+    headers = _register(client, "gh-install@test.local")
+    _enroll(client, headers)
+    repo = _link(client, headers, "student/install-repo")
+    payload = _pr_payload("opened", repo["full_name"])
+    payload["installation"] = {"id": 987654}
+    res = _post_webhook(client, payload)
+    assert res.status_code == 200, res.text
+    status = client.get("/api/github/status", headers=headers).json()
+    linked = next(r for r in status["repos"] if r["full_name"] == "student/install-repo")
+    assert linked["installation_id"] == 987654
+    assert linked["link_method"] == "app"
+
+
+def test_manual_submit_resolves_missing_installation_id(client, monkeypatch, fake_queue):
+    settings = SimpleNamespace(
+        github_webhook_secret=SECRET,
+        github_configured=True,
+        github_app_id="123",
+        github_private_key_path="/tmp/key.pem",
+        github_api_url="https://api.github.com",
+        github_base_repo="",
+    )
+    monkeypatch.setattr("app.routers.github.get_settings", lambda: settings)
+    monkeypatch.setattr("app.routers.github.get_repo_installation_id", lambda *a: 555)
+    monkeypatch.setattr("app.routers.github.get_installation_token", lambda *a: ("tok", "exp"))
+    monkeypatch.setattr(
+        "app.routers.github.fetch_pr_head_sha", lambda *a: ("d" * 40, "open", "ai-001-x", "main")
+    )
+    headers = _register(client, "gh-resolve@test.local")
+    _enroll(client, headers)
+    _link(client, headers, "student/resolve-repo")
+    tid = _task_id(client, headers)
+    res = client.post(
+        "/api/submissions",
+        json={"task_id": tid, "pr_url": "https://github.com/student/resolve-repo/pull/9"},
+        headers=headers,
+    )
+    assert res.status_code == 201, res.text
+    assert res.json()["head_sha"] == "d" * 40
+    status = client.get("/api/github/status", headers=headers).json()
+    linked = next(r for r in status["repos"] if r["full_name"] == "student/resolve-repo")
+    assert linked["installation_id"] == 555
+    assert linked["link_method"] == "app"
+
+
+def test_repo_link_accepts_github_urls(client):
+    """Pasted github.com URLs normalize to canonical owner/repo."""
+    headers = _register(client, "gh-urls@test.local")
+    _enroll(client, headers)
+    cases = {
+        "https://github.com/coderjks/px0/branches": "coderjks/px0",
+        "https://github.com/coderjks/px0": "coderjks/px0",
+        "https://github.com/coderjks/px0/": "coderjks/px0",
+        "https://github.com/coderjks/px0.git": "coderjks/px0",
+        "https://github.com/coderjks/px0/tree/main": "coderjks/px0",
+        "http://github.com/coderjks/px0/pull/7": "coderjks/px0",
+        "https://www.github.com/coderjks/px0": "coderjks/px0",
+        "  coderjks/px0-spaces  ": "coderjks/px0-spaces",
+    }
+    for raw, canonical in cases.items():
+        res = client.post("/api/github/repos", json={"full_name": raw}, headers=headers)
+        assert res.status_code == 201, (raw, res.text)
+        assert res.json()["full_name"] == canonical
+        assert (
+            client.delete(f"/api/github/repos/{res.json()['id']}", headers=headers).status_code == 204
+        )
+    # A URL is just an alias: linking the canonical name afterwards conflicts.
+    created = client.post(
+        "/api/github/repos", json={"full_name": "https://github.com/coderjks/px0/branches"}, headers=headers
+    )
+    assert created.status_code == 201
+    assert (
+        client.post("/api/github/repos", json={"full_name": "coderjks/px0"}, headers=headers).status_code
+        == 409
+    )
+
+
+def test_repo_link_rejects_non_github_refs(client):
+    headers = _register(client, "gh-badrefs@test.local")
+    _enroll(client, headers)
+    for raw in [
+        "bad name!!",
+        "https://gitlab.com/coderjks/px0",
+        "https://github.com.evil.com/coderjks/px0",
+        "https://github.com/onlyowner",
+        "https://github.com//px0",
+        "",
+    ]:
+        assert client.post("/api/github/repos", json={"full_name": raw}, headers=headers).status_code == 422, raw
+
+
 def test_repo_link_validation_and_scoping(client):
     headers = _register(client, "gh-repos@test.local")
     _enroll(client, headers)
@@ -311,3 +403,36 @@ def test_linking_non_fork_rejected_when_verifiable(client, webhook_secret, monke
     _enroll(client, headers)
     res = client.post("/api/github/repos", json={"full_name": "student/not-a-fork"}, headers=headers)
     assert res.status_code == 422
+
+
+def test_list_open_pulls_uses_linked_repo(client, webhook_secret, monkeypatch):
+    headers = _register(client, "gh-pulls@test.local")
+    _enroll(client, headers)
+    repo = _link(client, headers, "student/internship")
+    monkeypatch.setattr(
+        "app.routers.github.fetch_open_pulls",
+        lambda api_url, full_name: [
+            {"number": 7, "title": "AI-002: add endpoint", "head_sha": "abc123" + "0" * 34, "html_url": "https://github.com/student/internship/pull/7"},
+            {"number": 8, "title": "WIP", "head_sha": "def456" + "0" * 34, "html_url": "https://github.com/student/internship/pull/8"},
+        ],
+    )
+    res = client.get(f"/api/github/repos/{repo['id']}/pulls", headers=headers)
+    assert res.status_code == 200, res.text
+    pulls = res.json()
+    assert [p["number"] for p in pulls] == [7, 8]
+    assert pulls[0]["head_sha"].startswith("abc123")
+
+
+def test_list_open_pulls_rejects_foreign_repo_and_reports_github_failure(client, webhook_secret, monkeypatch):
+    headers = _register(client, "gh-pulls2@test.local")
+    _enroll(client, headers)
+    assert client.get("/api/github/repos/does-not-exist/pulls", headers=headers).status_code == 404
+    repo = _link(client, headers, "student/internship")
+
+    def boom(api_url, full_name):
+        raise RuntimeError("Could not list pull requests for student/internship. Is the fork public?")
+
+    monkeypatch.setattr("app.routers.github.fetch_open_pulls", boom)
+    res = client.get(f"/api/github/repos/{repo['id']}/pulls", headers=headers)
+    assert res.status_code == 502
+    assert "public" in res.json()["detail"]

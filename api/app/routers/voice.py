@@ -1,7 +1,7 @@
 """Voice sessions and turns (Phase 08).
 
 - Consent is recorded before any audio is accepted; without it, uploads 403.
-- Only scrum-master and tech-lead personas (no group meetings).
+- Any teammate persona may own a session (dictation is persona-agnostic).
 - Uploads are validated (audio/*, size cap, WAV duration cap, non-empty) and
   transcribed in memory. Raw audio is NEVER written to disk or the database.
 - Transcription and submission are separate steps: the student edits the
@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from app import config as config_module
 from app.agents.orchestrator import EnrollmentRequired, get_provider, respond
+from app.agents.roles import PERSONA_IDS
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import User, VoiceSession, VoiceTurn
@@ -37,7 +38,10 @@ from app.voice.providers import VoiceProviderError, get_stt, get_tts, wav_durati
 
 router = APIRouter(tags=["voice"])
 
-VOICE_PERSONAS = ("scrum-master", "tech-lead")
+# Any real teammate persona may own a dictation session: transcription is
+# persona-agnostic, and the stored persona only matters if a turn is ever
+# submitted for an agent reply. Single source of truth lives in roles.
+VOICE_PERSONAS = PERSONA_IDS
 
 
 def get_settings():

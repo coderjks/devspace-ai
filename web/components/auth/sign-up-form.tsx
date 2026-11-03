@@ -11,7 +11,7 @@ import { PasswordField } from "./password-field";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-export function SignUpForm() {
+export function SignUpForm({ nextPath }: { nextPath?: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -46,9 +46,13 @@ export function SignUpForm() {
       if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Sign up failed. Try again.");
       if (data.access_token) localStorage.setItem("devspace_token", data.access_token);
       setDone(true);
-      router.push("/onboarding");
+      router.push(nextPath ?? "/onboarding");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Sign up failed.");
+      if (err instanceof TypeError) {
+        setFormError("Can't reach the server. Is the API running? See Help for setup steps.");
+      } else {
+        setFormError(err instanceof Error ? err.message : "Sign up failed.");
+      }
     } finally {
       setLoading(false);
     }

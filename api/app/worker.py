@@ -15,8 +15,8 @@ import logging
 import signal
 
 from app.database import SessionLocal
-from app.eval.pipeline import TransientEvalError, requeue_or_fail, run_evaluation
-from app.models import Submission, SubmissionStatus
+from app.eval.pipeline import TransientEvalError, github_diff_fetcher, requeue_or_fail, run_evaluation
+from app.models import Repository, Submission, SubmissionStatus
 from app.queue import dequeue_evaluation, get_redis
 
 log = logging.getLogger("devspace.worker")
@@ -45,7 +45,17 @@ def process_one(redis_client, job: dict) -> str:
 
 def _run(db, redis_client, submission_id: str, sha: str, attempts: int) -> str:
     try:
-        outcome, evaluation = run_evaluation(db, submission_id, sha)
+        # Fetch the PR diff through the GitHub App when the linked repo
+        # carries an installation_id (populated by webhook deliveries or the
+        # manual-submit path). Without it the fetcher yields None and the
+        # pipeline records diff_available=skip, as before.
+        fetcher = None
+        submission = db.query(Submission).filter(Submission.id == submission_id).first()
+        if submission is not None and submission.repository_id:
+            repo = db.query(Repository).filter(Repository.id == submission.repository_id).first()
+            if repo is not None:
+                fetcher = github_diff_fetcher(submission, repo)
+        outcome, evaluation = run_evaluation(db, submission_id, sha, diff_fetcher=fetcher)
     except TransientEvalError as exc:
         action = requeue_or_fail(redis_client, submission_id, sha, attempts)
         log.warning("transient failure (attempt %d): %s -> %s", attempts, exc, action)

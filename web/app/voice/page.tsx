@@ -2,14 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Mic, MicOff, PencilLine, Send, Square } from "lucide-react";
+import { AudioLines, Mic, MicOff, PencilLine, Send, Square, X } from "lucide-react";
+import { VoiceWaveform } from "@/components/voice/voice-waveform";
+import { API_BASE } from "@/lib/utils";
+import { blobToWav16k } from "@/lib/audio-to-wav";
+import { useProviderStatus } from "@/lib/provider-status";
+import { STT_UNAVAILABLE_MSG } from "@/components/voice/use-voice-answer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { LoadingStatus, Skeleton } from "@/components/ui/skeleton";
 import { AppShell } from "@/components/app-shell";
-import { api } from "@/lib/api";
+import { api, authHeaders } from "@/lib/api";
 
 type Persona = "scrum-master" | "tech-lead";
 
@@ -30,12 +35,6 @@ type SubmitResult = {
   audio_mock: boolean;
 };
 
-const STANDUP_QUESTIONS = [
-  { key: "yesterday", label: "What did you complete?" },
-  { key: "today", label: "What will you work on next?" },
-  { key: "blockers", label: "Any blockers?" },
-] as const;
-
 export default function VoicePage() {
   const [me, setMe] = useState<{ email: string } | null>(null);
   const [persona, setPersona] = useState<Persona>("tech-lead");
@@ -52,27 +51,36 @@ export default function VoicePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [micBlocked, setMicBlocked] = useState(false);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  const [overlay, setOverlay] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const providerStatus = useProviderStatus();
+  const sttReady = providerStatus ? !providerStatus.stt_mock : null;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
 
-  const [answers, setAnswers] = useState<Record<string, string>>({ yesterday: "", today: "", blockers: "" });
-  const [taskId, setTaskId] = useState("");
-  const [tasks, setTasks] = useState<{ id: string; key: string; title: string }[]>([]);
-  const [proposal, setProposal] = useState<{ standup: { id: string }; proposed_changes: string[]; created: boolean } | null>(null);
-  const [standupMsg, setStandupMsg] = useState<string | null>(null);
-
   useEffect(() => {
     api<{ email: string }>("/api/auth/me").then(setMe).catch(() => {});
-    api<{ tasks: { id: string; key: string; title: string }[] }>("/api/sprints/current")
-      .then((d) => setTasks(d.tasks ?? []))
-      .catch(() => {});
   }, []);
 
   useEffect(() => () => {
     if (timerRef.current) window.clearInterval(timerRef.current);
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
   }, []);
+
+  useEffect(() => {
+    setEditing(false);
+  }, [activeTurn?.id]);
+
+  useEffect(() => {
+    if (result?.audio_wav_base64 && audioRef.current) {
+      audioRef.current.play().catch(() => {
+        /* autoplay blocked — the visible audio controls are the fallback */
+      });
+    }
+  }, [result]);
 
   const startSession = useCallback(async () => {
     setBusy(true);
@@ -95,6 +103,10 @@ export default function VoicePage() {
   async function startRecording() {
     setError(null);
     setMicBlocked(false);
+    if (sttReady === false) {
+      setError(STT_UNAVAILABLE_MSG);
+      return;
+    }
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -111,6 +123,7 @@ export default function VoicePage() {
     rec.onstop = () => upload(new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" }));
     recorderRef.current = rec;
     rec.start();
+    setMicStream(stream);
     setRecording(true);
     setRecSecs(0);
     timerRef.current = window.setInterval(() => setRecSecs((s) => s + 1), 1000);
@@ -120,6 +133,7 @@ export default function VoicePage() {
     recorderRef.current?.stop();
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
     if (timerRef.current) window.clearInterval(timerRef.current);
+    setMicStream(null);
     setRecording(false);
   }
 
@@ -132,12 +146,15 @@ export default function VoicePage() {
     setBusy(true);
     setError(null);
     try {
+      const wav = await blobToWav16k(blob).catch(() => null);
+      if (!wav) throw new Error("Could not prepare the recording for transcription — use Type mode.");
       const form = new FormData();
-      form.append("audio", blob, "turn.webm");
-      const res = await fetch(`/api/voice/sessions/${sessionId}/turns`, {
+      form.append("audio", wav, "turn.wav");
+      const res = await fetch(`${API_BASE}/api/voice/sessions/${sessionId}/turns`, {
         method: "POST",
         body: form,
         credentials: "include",
+        headers: { ...authHeaders() },
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail ?? `Upload failed (${res.status})`);
       const turn = (await res.json()) as Turn;
@@ -189,46 +206,14 @@ export default function VoicePage() {
     }
   }
 
-  async function proposeStandup() {
-    setStandupMsg(null);
-    try {
-      const r = await api<{ standup: { id: string }; proposed_changes: string[]; created: boolean }>(
-        "/api/standups/propose",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            yesterday: answers.yesterday,
-            today: answers.today,
-            blockers: answers.blockers,
-            task_id: taskId || null,
-            idempotency_key: crypto.randomUUID().replace(/-/g, ""),
-          }),
-        }
-      );
-      setProposal(r);
-    } catch (e) {
-      setStandupMsg(e instanceof Error ? e.message : "Propose failed");
-    }
-  }
-
-  async function confirmStandup() {
-    if (!proposal) return;
-    try {
-      await api(`/api/standups/${proposal.standup.id}/confirm`, { method: "POST" });
-      setStandupMsg("Standup confirmed — blockers shared with the Tech Lead. State changed only on your confirm.");
-      setProposal(null);
-    } catch (e) {
-      setStandupMsg(e instanceof Error ? e.message : "Confirm failed");
-    }
-  }
-
   return (
     <AppShell email={me?.email}>
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Voice standup & conversation</p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Voice</h1>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Talk it out</p>
+      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Voice conversation</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Speak with the Scrum Master or Tech Lead, edit the transcript, then submit. Voice never changes sprint state
-        by itself — confirmations stay explicit. Prefer typing? Use Type mode or continue in text chat.
+        Talk through anything with the Scrum Master or Tech Lead — blockers, design doubts, plan reviews.
+        The daily standup ritual lives on the <Link href="/standup" className="font-medium text-primary hover:underline">standup page</Link> (with per-question dictation);
+        this room is for free discussion. Transcripts stay editable and nothing is recorded until you submit.
       </p>
 
       <div className="mt-6 space-y-4">
@@ -259,7 +244,13 @@ export default function VoicePage() {
             {!sessionId ? (
               <Button onClick={startSession} disabled={busy || !consent}>Start voice session</Button>
             ) : (
-              <p className="text-sm text-muted-foreground">Session active — record or type below. <Button variant="ghost" size="sm" onClick={() => setSessionId(null)}>End</Button></p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm text-muted-foreground">Session active — record or type below.</p>
+                <Button variant="default" size="sm" onClick={() => setOverlay(true)} disabled={sttReady === false} title={sttReady === false ? STT_UNAVAILABLE_MSG : undefined}>
+                  <AudioLines size={15} aria-hidden /> Conversation mode
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSessionId(null)}>End</Button>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -282,17 +273,25 @@ export default function VoicePage() {
                   <Button variant={mode === "type" ? "default" : "outline"} size="sm" onClick={() => setMode("type")}>Type</Button>
                 </div>
                 {mode === "speak" ? (
-                  <div className="flex items-center gap-3">
-                    {!recording ? (
-                      <Button onClick={startRecording} disabled={busy} aria-label="Start recording">
-                        <Mic size={16} aria-hidden /> Record {micBlocked ? "(blocked)" : ""}
-                      </Button>
-                    ) : (
-                      <Button variant="secondary" onClick={stopRecording} aria-label="Stop recording">
-                        <Square size={16} aria-hidden /> Stop ({recSecs}s)
-                      </Button>
-                    )}
-                    {busy ? <LoadingStatus label="Transcribing…" /> : null}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      {!recording ? (
+                        <Button onClick={startRecording} disabled={busy || sttReady === false} title={sttReady === false ? STT_UNAVAILABLE_MSG : undefined} aria-label="Start recording">
+                          <Mic size={16} aria-hidden /> Record {micBlocked ? "(blocked)" : ""}
+                        </Button>
+                      ) : (
+                        <Button variant="destructive" onClick={stopRecording} aria-label="Stop recording" aria-pressed="true">
+                          <Square size={16} aria-hidden fill="currentColor" /> Stop&nbsp;<span className="tabular-nums">({recSecs}s)</span>
+                        </Button>
+                      )}
+                      {busy && !recording ? <LoadingStatus label="Transcribing…" /> : null}
+                    </div>
+                    {recording ? (
+                      <div className="flex items-center gap-3 rounded-lg bg-destructive/[0.06] px-3 py-2" role="status">
+                        <VoiceWaveform stream={micStream} bars={32} className="flex-1 text-destructive" />
+                        <span className="shrink-0 text-xs font-medium text-muted-foreground">You&apos;re being heard — tap Stop to transcribe.</span>
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 sm:flex-row">
@@ -328,52 +327,6 @@ export default function VoicePage() {
               </CardContent>
             </Card>
 
-            {persona === "scrum-master" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Guided standup</CardTitle>
-                  <CardDescription>
-                    Answer the three standup questions (speak above or type here), then review and confirm.
-                    Nothing is recorded until you confirm.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {STANDUP_QUESTIONS.map((q) => (
-                    <div key={q.key} className="space-y-1">
-                      <label htmlFor={`voice-${q.key}`} className="text-sm font-medium">{q.label}</label>
-                      <textarea id={`voice-${q.key}`} value={answers[q.key]} onChange={(e) => setAnswers({ ...answers, [q.key]: e.target.value })} rows={2} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                    </div>
-                  ))}
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <select value={taskId} onChange={(e) => setTaskId(e.target.value)} aria-label="Related ticket" className="rounded-md border border-input bg-background px-2 py-2 text-sm">
-                      <option value="">No specific ticket</option>
-                      {tasks.map((t) => <option key={t.id} value={t.id}>{t.key} — {t.title}</option>)}
-                    </select>
-                    <Button onClick={proposeStandup} disabled={!answers.yesterday.trim() || !answers.today.trim()}>Review proposed changes</Button>
-                  </div>
-                  {proposal ? (
-                    <div className="space-y-2 rounded-lg border border-primary/30 p-3">
-                      <p className="text-sm font-medium">Proposed changes:</p>
-                      <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                        {proposal.proposed_changes.map((c) => <li key={c}>{c}</li>)}
-                      </ul>
-                      <Button onClick={confirmStandup}>Confirm standup</Button>
-                    </div>
-                  ) : null}
-                  {standupMsg ? <p role="status" className="text-sm text-muted-foreground">{standupMsg}</p> : null}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Tip</CardTitle>
-                  <CardDescription>
-                    Switch to the Scrum Master above for the guided yesterday/today/blockers flow. Confirmed blockers
-                    are shared with the Tech Lead automatically.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            )}
           </>
         ) : (
           !me ? <Skeleton className="h-32 w-full rounded-xl" /> : (
@@ -385,6 +338,99 @@ export default function VoicePage() {
           )
         )}
       </div>
+      {overlay && sessionId ? (
+        <div role="dialog" aria-modal="true" aria-label={`Voice conversation with ${persona === "tech-lead" ? "Tech Lead" : "Scrum Master"}`} className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur animate-fade-in">
+          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-8">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                {persona === "tech-lead" ? "Tech Lead" : "Scrum Master"} · conversation mode
+              </p>
+              <Button variant="ghost" size="sm" onClick={() => setOverlay(false)} aria-label="Close conversation mode">
+                <X size={17} aria-hidden />
+              </Button>
+            </div>
+            <div className="flex flex-col items-center py-8">
+              <button
+                type="button"
+                onClick={() => (recording ? stopRecording() : void startRecording())}
+                disabled={busy && !recording}
+                aria-label={recording ? "Stop talking" : "Tap to talk"}
+                className={`relative flex h-28 w-28 items-center justify-center rounded-full shadow-lift transition-all duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                  recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"
+                }`}
+              >
+                {recording ? (
+                  <>
+                    <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-destructive/40" />
+                    <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-destructive/20 [animation-delay:0.5s]" />
+                  </>
+                ) : null}
+                {recording ? <Square size={30} aria-hidden fill="currentColor" /> : <Mic size={30} aria-hidden />}
+              </button>
+              {recording ? (
+                <div className="mt-4 w-64" role="status" aria-label="Live voice levels">
+                  <VoiceWaveform stream={micStream} bars={36} className="text-destructive" />
+                  <p className="mt-1 text-center text-sm font-medium tabular-nums">{recSecs}s — tap the orb to finish</p>
+                </div>
+              ) : (
+                <p role="status" className="mt-4 text-sm font-medium">
+                  {busy
+                    ? "Working…"
+                    : activeTurn && !result
+                      ? "Review the transcript, edit if needed, then submit"
+                      : "Tap the orb and speak"}
+                </p>
+              )}
+              <p className="mt-1 text-xs text-muted-foreground">Nothing is recorded until you submit.</p>
+            </div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
+              {activeTurn ? (
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    You {activeTurn.stt_mock ? "(mock transcription)" : ""} ·{" "}
+                    <button type="button" onClick={() => setEditing((v) => !v)} className="font-medium text-primary hover:underline">
+                      {editing ? "Done editing" : "Edit"}
+                    </button>
+                  </p>
+                  {editing ? (
+                    <textarea
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      rows={3}
+                      aria-label="Edit transcript"
+                      className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm leading-6">{draft || activeTurn.transcript}</p>
+                  )}
+                  <Button onClick={submitTurn} disabled={busy || !draft.trim()} size="sm" className="mt-3">
+                    <Send size={14} aria-hidden /> Submit
+                  </Button>
+                </div>
+              ) : null}
+              {result ? (
+                <div className="rounded-2xl border border-primary/25 bg-primary/[0.04] p-4" aria-live="polite">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {persona === "tech-lead" ? "Tech Lead" : "Scrum Master"} replies{result.reply_mock ? " (mock, advisory)" : ""}
+                  </p>
+                  <p className="mt-1 text-sm leading-6">{result.reply_text}</p>
+                  {result.audio_wav_base64 ? (
+                    <audio ref={audioRef} controls src={`data:audio/wav;base64,${result.audio_wav_base64}`} className="mt-2 w-full">
+                      Audio playback not supported — read the reply text above.
+                    </audio>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">No audio synthesized — text reply above is the fallback.</p>
+                  )}
+                  <p className="mt-2 text-xs">
+                    <Link href={`/team/${persona}`} className="font-medium text-primary hover:underline">Continue in text chat →</Link>
+                  </p>
+                </div>
+              ) : null}
+            </div>
+            {error ? <p role="alert" className="pb-2 text-sm text-destructive">{error}</p> : null}
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
 }

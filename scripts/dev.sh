@@ -53,13 +53,15 @@ cmd_start() {
   if is_up "http://127.0.0.1:${API_PORT}/health"; then
     echo "api already running on :$API_PORT — leaving it alone"
   else
-    # Forward model settings only when exported in the shell. When unset,
-    # they are intentionally omitted so api/.env (pydantic env_file) can
-    # supply them instead — an explicit empty value would shadow the file.
+    # Model/voice settings: shell exports win; otherwise fall back to the
+    # repo-root .env (single canonical file). An explicit empty value is
+    # never forwarded — it would shadow the file with a blank.
     API_ENV=(DATABASE_URL="$DATABASE_URL" REDIS_URL="$REDIS_URL"
       CORS_ORIGINS="http://localhost:${WEB_PORT},http://127.0.0.1:${WEB_PORT}")
-    for v in LLM_PROVIDER MODEL_API_KEY MODEL_ID MODEL_API_BASE_URL; do
-      if [ -n "${!v:-}" ]; then API_ENV+=("$v=${!v}"); fi
+    root_val() { grep -E "^$1=" "$ROOT/.env" 2>/dev/null | tail -1 | cut -d= -f2-; }
+    for v in LLM_PROVIDER MODEL_API_KEY MODEL_ID MODEL_API_BASE_URL STT_PROVIDER STT_API_KEY STT_MODEL TTS_PROVIDER; do
+      if [ -n "${!v:-}" ]; then API_ENV+=("$v=${!v}");
+      elif [ -n "$(root_val "$v")" ]; then API_ENV+=("$v=$(root_val "$v")"); fi
     done
     (cd "$ROOT/api" && env "${API_ENV[@]}" \
       ../.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port "$API_PORT" \

@@ -48,6 +48,7 @@ def _user_task_ids(db: Session, user: User) -> set[str]:
 
 def _read_tasks(db: Session, user: User, args: dict) -> dict:
     from app.models import Project, Sprint
+    from app.task_state import effective_blocked_reason, resolve_statuses
 
     project = db.query(Project).first()
     sprint = None
@@ -61,17 +62,25 @@ def _read_tasks(db: Session, user: User, args: dict) -> dict:
         )
         if sprint:
             tasks = db.query(Task).filter(Task.sprint_id == sprint.id).order_by(Task.sort_order).all()
+    effective, states = resolve_statuses(db, user.id, tasks)
     return {
         "project": project.name if project else None,
         "sprint": sprint.name if sprint else None,
         "tasks": [
-            {"key": t.key, "title": t.title, "status": t.status.value, "blocked": bool(t.blocked_reason)}
+            {
+                "key": t.key,
+                "title": t.title,
+                "status": effective[t.id].value,
+                "blocked": bool(effective_blocked_reason(t, states)),
+            }
             for t in tasks
         ],
     }
 
 
 def _flag_blocker(db: Session, user: User, args: dict) -> dict:
+    from app.task_state import resolve_statuses, upsert_state
+
     task_id = args.get("task_id")
     reason = (args.get("reason") or "").strip()
     if not task_id or not reason:
@@ -81,7 +90,8 @@ def _flag_blocker(db: Session, user: User, args: dict) -> dict:
     task = db.query(Task).filter(Task.id == task_id).first()
     if task is None:
         raise ValueError("task not found")
-    task.blocked_reason = reason
+    effective, _ = resolve_statuses(db, user.id, [task])
+    upsert_state(db, user.id, task.id, effective[task.id], blocked_reason=reason)
     db.flush()
     return {"task_id": task_id, "blocked_reason": reason}
 

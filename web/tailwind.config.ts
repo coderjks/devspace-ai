@@ -9,6 +9,17 @@ const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          "\"Inter Variable\"",
+          "Inter",
+          "system-ui",
+          "-apple-system",
+          "\"Segoe UI\"",
+          "Roboto",
+          "sans-serif",
+        ],
+      },
       colors: {
         border: token("border"),
         input: token("input"),

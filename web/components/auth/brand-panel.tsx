@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BarChart3, Code2, GitPullRequest, Mic, Users } from "lucide-react";
 import { Eyebrow } from "@/components/landing/section";
+import { Logo } from "@/components/logo";
 import { WorkspaceMiniPreview } from "./workspace-mini-preview";
 
 const FEATURES = [
@@ -16,9 +17,7 @@ export function BrandPanel() {
       <div aria-hidden className="glow-conic absolute inset-0" />
       <div className="relative">
       <Link href="/" className="enter-rise flex items-center gap-2" aria-label="DevSpace AI home" style={{ "--enter-delay": "0ms" } as React.CSSProperties}>
-        <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground">
-          D
-        </span>
+        <Logo size="md" />
         <span className="text-[15px] font-bold tracking-tight text-foreground">DevSpace AI</span>
       </Link>
       <div className="enter-rise mt-8" style={{ "--enter-delay": "80ms" } as React.CSSProperties}>

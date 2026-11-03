@@ -51,7 +51,7 @@ export function Features() {
       description="Everything you need to feel like a real software engineer, powered by AI."
     >
       <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
-        {/* Showcase card: PR evaluation, with a mini status mock. */}
+        {/* Showcase card: PR evaluation, with a mini status panel. */}
         <Reveal className="h-full lg:col-span-2" delay={0}>
           <div className="grid h-full gap-6 rounded-2xl border border-border bg-card p-6 shadow-soft transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lift sm:grid-cols-2 md:p-8">
             <div className="flex flex-col justify-center">

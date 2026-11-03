@@ -56,7 +56,7 @@ Status convention: tinted background + colored text (`bg-success/15 text-success
 
 ## 4. Typography and spacing
 
-- System font stack (no webfont download; keeps builds offline-safe).
+- Inter Variable as the brand typeface, self-hosted via `@fontsource-variable/inter` (npm-bundled, no runtime download; builds stay offline-safe). System stack (`system-ui`, Segoe UI, Roboto) is the fallback.
 - Base 16px, body `line-height: 1.6`. Headings: page `text-2xl`–`text-4xl` bold tight; section `text-3xl/4xl`; card titles semibold.
 - Display scale (landing/hero only): `text-[2.75rem] md:text-6xl font-extrabold tracking-tight leading-[1.04]`, with one `text-primary` accent span at most. Use `text-balance` on display headings, `text-pretty` on supporting copy.
 - Kickers: `text-xs font-semibold uppercase tracking-[0.18em] text-primary` with a dot (see `Eyebrow`).
