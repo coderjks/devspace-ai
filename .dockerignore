@@ -1,0 +1,14 @@
+# Keep secrets and machine-local bulk out of every image.
+.env
+api/.env
+api/secrets/
+**/__pycache__/
+**/*.pyc
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.git/
+web/node_modules/
+web/.next/
+reference_images/
