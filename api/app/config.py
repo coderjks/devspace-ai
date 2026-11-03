@@ -61,6 +61,20 @@ class Settings(BaseSettings):
         # must behave like an unset value, not override the mock default.
         return "mock" if v in (None, "") else v
 
+    @field_validator("database_url", "database_url_unpooled", mode="before")
+    @classmethod
+    def _normalize_postgres_scheme(cls, v: object) -> object:
+        # Managed providers (Railway, Render) issue bare `postgres://` URLs
+        # with no driver named. SQLAlchemy needs the driver, so map to the
+        # psycopg v3 dialect this app installs. Explicit drivers and other
+        # schemes (e.g. SQLite in tests) pass through untouched.
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return "postgresql+psycopg://" + v[len("postgres://") :]
+            if v.startswith("postgresql://"):
+                return "postgresql+psycopg://" + v[len("postgresql://") :]
+        return v
+
     @property
     def github_configured(self) -> bool:
         return bool(self.github_app_id and self.github_private_key_path and self.github_webhook_secret)
