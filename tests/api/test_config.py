@@ -20,3 +20,17 @@ def test_explicit_driver_and_sqlite_are_untouched(monkeypatch):
     assert config_module.Settings().database_url == "postgresql+psycopg://u:p@host:5432/db"
     monkeypatch.setenv("DATABASE_URL", "sqlite+pysqlite:///:memory:")
     assert config_module.Settings().database_url == "sqlite+pysqlite:///:memory:"
+
+
+def test_migration_url_prefers_direct_and_normalizes(monkeypatch):
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    try:
+        monkeypatch.setenv("DATABASE_URL", "postgres://u:p@host:5432/db")
+        monkeypatch.setenv("DATABASE_URL_UNPOOLED", "postgresql://u:p@direct:5432/db")
+        s = config_module.Settings()
+        # Direct (unpooled) wins, and the bare scheme is normalized.
+        assert s.migration_database_url == "postgresql+psycopg://u:p@direct:5432/db"
+    finally:
+        get_settings.cache_clear()

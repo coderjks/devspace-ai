@@ -1,4 +1,3 @@
-import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -18,14 +17,14 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Migrations must use a DIRECT (non-pooled) connection. Prefer
-# DATABASE_URL_UNPOOLED, then DATABASE_URL env, then settings.
+# Migrations must use a DIRECT (non-pooled) connection. Always go through
+# the settings object: it prefers DATABASE_URL_UNPOOLED, falls back to
+# DATABASE_URL, and normalizes bare `postgres://` URLs from managed
+# providers to the installed psycopg v3 dialect. Reading os.environ here
+# directly would bypass that normalization and hand SQLAlchemy a driverless
+# URL (psycopg2 import failure on hosts without it).
 settings = get_settings()
-database_url = (
-    os.environ.get("DATABASE_URL_UNPOOLED")
-    or os.environ.get("DATABASE_URL")
-    or settings.migration_database_url
-)
+database_url = settings.migration_database_url
 config.set_main_option("sqlalchemy.url", database_url)
 
 target_metadata = Base.metadata
