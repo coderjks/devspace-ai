@@ -15,4 +15,11 @@ if [ -n "${GITHUB_APP_PRIVATE_KEY_B64:-}" ]; then
   chmod 600 "$KEY_PATH"
 fi
 alembic upgrade head
+# Optional demo seed (idempotent insert-if-missing: never updates existing
+# rows, so re-runs can't clobber student progress). Opt-in via
+# RUN_SEED_ON_BOOT=true — set it on the API service only, never on the
+# worker, so two processes can't seed the same empty database concurrently.
+if [ "${RUN_SEED_ON_BOOT:-false}" = "true" ]; then
+  python -m app.seed
+fi
 exec "$@"

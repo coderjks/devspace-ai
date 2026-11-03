@@ -1,9 +1,14 @@
 FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
-COPY requirements.txt .
+# Build context is the repository root (compose: context .., Railway: root
+# directory repo root with dockerfilePath api/Dockerfile) so the versioned
+# curriculum can be baked into the image — the seed needs it at boot and
+# there is no curriculum mount on hosted platforms.
+COPY api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
+COPY api/ .
+COPY curriculum/ /curriculum/
 RUN chmod +x /app/docker-entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 EXPOSE 8000
