@@ -75,7 +75,7 @@ export default function SubmissionPage({ params }: { params: { id: string } }) {
     try {
       const [meData, list] = await Promise.all([
         api<{ email: string }>("/api/auth/me"),
-        api<Evaluation[]>(`/api/submissions/${id}/evaluations`),
+        api<Evaluation[]>(`/api/submissions/${id}/evaluations`, undefined, { cache: false }),
       ]);
       setMe(meData);
       setEvals(list);
@@ -93,7 +93,7 @@ export default function SubmissionPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     if (evals === null || evals.length > 0) return;
     const timer = setInterval(() => {
-      api<Evaluation[]>(`/api/submissions/${id}/evaluations`)
+      api<Evaluation[]>(`/api/submissions/${id}/evaluations`, undefined, { cache: false })
         .then((list) => setEvals(list))
         .catch(() => undefined);
     }, 5000);

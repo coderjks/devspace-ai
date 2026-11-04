@@ -1,9 +1,9 @@
 # DevSpace AI — Progress Tracker
 
-**Last updated:** 2026-11-04 (product tour and visitor README on `product-tour`)
+**Last updated:** 2026-11-04 (product tour merged; navigation GET caching on `perf/navigation-cache`)
 **Canonical PRD:** `docs/prd/requirements.md` v2.2.1
 **Execution order:** `docs/prompts/build-playbook.md` v2.2.1
-**Gate state:** Phase 11 DONE — full journey verified live, [qa-report](qa-report.md) written, 101 tests green. Later deployment hardening and the first-run product tour are on `product-tour` (committed and pushed, not merged). Await review/merge before further phase work.
+**Gate state:** Phase 11 DONE — full journey verified live, [qa-report](qa-report.md) written, 101 tests green. Later deployment hardening and the first-run product tour were merged through PR #9. Navigation GET caching is committed locally on `perf/navigation-cache` (not pushed); await review before further phase work.
 **Handoff:** New models/engineers start at [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md), then read this file.
 
 ---
@@ -261,6 +261,7 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-11-02 | Self-seeding deploy on `feat/seed-on-boot` (uncommitted): API image builds from repo root with `curriculum/` baked in + root `.dockerignore` (also stops secrets leaking into images); entrypoint seeds when `RUN_SEED_ON_BOOT=true` (API only — never the worker); compose api/worker builds use the root context. Verified live: entrypoint migrates+seeds then execs. 128 pytest + ruff + mypy + tsc green. Railway services must switch to repo-root context (`dockerfilePath api/Dockerfile`) and set the flag. |
 | 2026-11-04 | First-run product tour on `product-tour` (committed and pushed): auto-opens once per signed-in user on the dashboard, walks Dashboard → Board → Standup → Team → GitHub → Growth with spotlight highlights, skip/finish persistence, cross-page step restore, and a sidebar “Product tour” replay entry. Web typecheck + production build green; served-page smoke check confirmed the replay entry and tour anchors. |
 | 2026-11-04 | Visitor README expanded on `product-tour` (committed and pushed): removed stale phase notes, added Demo (Vercel web + Railway API health), Features, Prerequisites, architecture with a “why” for each component, Environment variables, Deployment, Project status/roadmap, Contributing, and License note. Demo links re-verified HTTP 200. Remaining optional polish: committed screenshots or a short demo video. |
+| 2026-11-04 | Navigation repeat-call reduction on `perf/navigation-cache` (committed locally, not pushed): web API helper now deduplicates simultaneous GETs and reuses GET results for 10 seconds, keyed by auth headers; any write clears the cache, logout clears it, and evaluation-report polling explicitly bypasses it. Web typecheck + production build green; local Docker web rebuilt and login/dashboard/API health returned 200. No web test harness exists, so no new automated web test was added. |
 
 ---
 
