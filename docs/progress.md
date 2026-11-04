@@ -1,9 +1,9 @@
 # DevSpace AI — Progress Tracker
 
-**Last updated:** 2026-10-29 (Phases 08–10 approved; trackers updated)
+**Last updated:** 2026-11-04 (product tour and visitor README on `product-tour`)
 **Canonical PRD:** `docs/prd/requirements.md` v2.2.1
 **Execution order:** `docs/prompts/build-playbook.md` v2.2.1
-**Gate state:** Phase 11 DONE — full journey verified live, [qa-report](qa-report.md) written, 101 tests green. Committed on `feat/11-qa` — not pushed, not merged. Pointer at Phase 12 (deployment & demo). Do not start Phase 12 without explicit instruction.
+**Gate state:** Phase 11 DONE — full journey verified live, [qa-report](qa-report.md) written, 101 tests green. Later deployment hardening and the first-run product tour are on `product-tour` (committed and pushed, not merged). Await review/merge before further phase work.
 **Handoff:** New models/engineers start at [docs/handoff.md](/Users/jsaxena/Documents/devspace-ai/docs/handoff.md), then read this file.
 
 ---
@@ -260,6 +260,7 @@ Scope exclusions honored: no AI, voice, or GitHub code. Delivered: monorepo scaf
 | 2026-11-02 | `installation_id` gap fixed on `feat/chat-identity` (uncommitted): webhook persists `installation.id` onto the repo row; manual submit resolves+stores it via App JWT (`GET /repos/{o}/{r}/installation`); worker builds `github_diff_fetcher` per job; added `PyJWT[crypto]` (RS256 never worked without it). 2 new tests, 124 green, ruff+mypy clean. Proven live: real installation `177873874` resolved for the base repo; synthetic signed delivery stored it on the linked fork; queue stayed 0. Full live diff fetch on a real fork PR still UNTESTED. |
 | 2026-11-02 | Self-seeding deploy on `feat/seed-on-boot` (uncommitted): API image builds from repo root with `curriculum/` baked in + root `.dockerignore` (also stops secrets leaking into images); entrypoint seeds when `RUN_SEED_ON_BOOT=true` (API only — never the worker); compose api/worker builds use the root context. Verified live: entrypoint migrates+seeds then execs. 128 pytest + ruff + mypy + tsc green. Railway services must switch to repo-root context (`dockerfilePath api/Dockerfile`) and set the flag. |
 | 2026-11-04 | First-run product tour on `product-tour` (committed and pushed): auto-opens once per signed-in user on the dashboard, walks Dashboard → Board → Standup → Team → GitHub → Growth with spotlight highlights, skip/finish persistence, cross-page step restore, and a sidebar “Product tour” replay entry. Web typecheck + production build green; served-page smoke check confirmed the replay entry and tour anchors. |
+| 2026-11-04 | Visitor README expanded on `product-tour` (committed and pushed): removed stale phase notes, added Demo (Vercel web + Railway API health), Features, Prerequisites, architecture with a “why” for each component, Environment variables, Deployment, Project status/roadmap, Contributing, and License note. Demo links re-verified HTTP 200. Remaining optional polish: committed screenshots or a short demo video. |
 
 ---
 
