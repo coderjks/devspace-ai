@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   CalendarCheck,
+  Compass,
   Github,
   KanbanSquare,
   LayoutDashboard,
@@ -23,6 +24,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { api, logout } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
+import { PRODUCT_TOUR_EVENT, ProductTour } from "@/components/product-tour";
 
 // Workflow order: home → work → daily rituals → collaborate → submit →
 // review results → curriculum reference. Utility links live below the divider.
@@ -69,6 +71,7 @@ function SidebarContent({ email, onNavigate }: { email?: string; onNavigate?: ()
               key={item.href}
               href={item.href}
               onClick={onNavigate}
+              data-tour={`nav-${item.href.slice(1)}`}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-150",
@@ -92,6 +95,7 @@ function SidebarContent({ email, onNavigate }: { email?: string; onNavigate?: ()
               key={item.href}
               href={item.href}
               onClick={onNavigate}
+              data-tour={`nav-${item.href.slice(1)}`}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-150",
@@ -105,6 +109,17 @@ function SidebarContent({ email, onNavigate }: { email?: string; onNavigate?: ()
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new Event(PRODUCT_TOUR_EVENT));
+            onNavigate?.();
+          }}
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent/60 hover:text-foreground"
+        >
+          <Compass size={17} aria-hidden className="shrink-0" />
+          Product tour
+        </button>
         <Link
           href="/profile"
           onClick={onNavigate}
@@ -239,6 +254,7 @@ export function AppShell({ email, children }: { email?: string; children: React.
         {/* Full-width content area */}
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
       </div>
+      <ProductTour email={email} />
     </div>
   );
 }
