@@ -8,6 +8,8 @@ Model text never authorizes anything; all state changes are ordinary ORM
 writes gated by get_current_user + enrollment ownership.
 """
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.agents.provider import LLMProvider, ProviderError
@@ -22,6 +24,8 @@ from app.models import (
     Task,
     User,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class EnrollmentRequired(PermissionError):
@@ -140,6 +144,7 @@ def respond(
     )
     history = [{"role": m.role, "content": m.content} for m in history_rows[-21:-1]]
     context = build_context(db, user, conv.task_id)
+    fallback_reason: str | None = None
     try:
         result = provider.respond(
             persona=persona,
@@ -152,17 +157,25 @@ def respond(
         model = result.model
         if not reply_text:
             raise ProviderError("empty model response")
-    except ProviderError:
+    except ProviderError as exc:
+        # Never leave this silent: a constant fallback almost always means a
+        # provider/config problem (bad key, model ID, quota, timeout), and
+        # the reason is safe to log because ProviderError carries no secrets.
+        fallback_reason = str(exc)[:300]
+        logger.warning("agent reply fell back persona=%s reason=%s", persona, fallback_reason)
         reply_text = FALLBACK_REPLY
         model = "fallback"
     assistant_msg = AgentMessage(conversation_id=conv.id, role="assistant", content=reply_text)
     db.add(assistant_msg)
+    payload: dict[str, str] = {"conversation_id": conv.id, "model": model}
+    if fallback_reason:
+        payload["fallback_reason"] = fallback_reason
     db.add(
         ActivityEvent(
             user_id=user.id,
             actor=f"agent:{persona}",
             action="agent_reply",
-            payload={"conversation_id": conv.id, "model": model},
+            payload=payload,
         )
     )
     db.commit()

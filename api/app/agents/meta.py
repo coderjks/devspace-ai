@@ -48,8 +48,18 @@ class MetaAdapter(LLMProvider):
             text = (data["choices"][0]["message"].get("content") or "").strip()
         except ProviderError:
             raise
+        except httpx.HTTPStatusError as exc:
+            # Include the status and a short provider message so operators can
+            # tell a bad key (401) from a bad model ID (404) or quota (429).
+            # Response bodies never contain our API key.
+            snippet = " ".join((exc.response.text or "").split())[:300]
+            raise ProviderError(
+                f"model provider returned HTTP {exc.response.status_code}: {snippet}"
+            ) from exc
+        except httpx.TimeoutException as exc:
+            raise ProviderError("model provider request timed out") from exc
         except Exception as exc:
-            raise ProviderError("model provider request failed") from exc
+            raise ProviderError(f"model provider request failed ({type(exc).__name__})") from exc
         if not text:
             raise ProviderError("model provider returned an empty response")
         return LLMResponse(text=text, model=self._model, mock=False)

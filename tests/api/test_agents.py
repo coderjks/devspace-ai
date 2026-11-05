@@ -140,6 +140,31 @@ def test_meta_adapter_requires_key_and_model():
         MetaAdapter(base_url="https://api.meta.ai/v1", api_key="k", model="")
 
 
+def test_meta_adapter_reports_http_status(monkeypatch):
+    import httpx
+    from app.agents import meta as meta_module
+    from app.agents.meta import MetaAdapter
+
+    request = httpx.Request("POST", "https://api.meta.ai/v1/chat/completions")
+
+    class FakeResponse:
+        status_code = 401
+        text = '{"error": "invalid api key"}'
+
+        def raise_for_status(self):
+            raise httpx.HTTPStatusError(
+                "401", request=request, response=httpx.Response(401, request=request)
+            )
+
+    monkeypatch.setattr(meta_module.httpx, "post", lambda *a, **k: FakeResponse())
+    adapter = MetaAdapter(base_url="https://api.meta.ai/v1", api_key="k", model="m1")
+    with pytest.raises(ProviderError) as excinfo:
+        adapter.respond(
+            persona="tech-lead", system_prompt="s", context="c", history=[], user_message="hi"
+        )
+    assert "HTTP 401" in str(excinfo.value)
+
+
 def test_get_provider_rejects_unknown_name():
     with pytest.raises(ProviderError):
         get_provider("nope", get_settings())
