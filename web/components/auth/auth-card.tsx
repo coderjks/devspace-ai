@@ -18,8 +18,14 @@ export function AuthCard() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const searchParams = useSearchParams();
   const nextPath = safeNextPath(searchParams.get("next"));
+  const sessionExpired = searchParams.get("expired") === "1";
   return (
     <div className="w-full rounded-xl border border-border bg-card p-6 text-card-foreground md:p-8">
+      {sessionExpired ? (
+        <p role="alert" className="mb-4 rounded-lg bg-warning/15 px-3 py-2 text-sm text-warning">
+          Your session has expired. Please sign in again to continue.
+        </p>
+      ) : null}
       <div role="tablist" aria-label="Authentication mode" className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
         {(["signin", "signup"] as const).map((m) => (
           <button

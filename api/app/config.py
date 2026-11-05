@@ -22,9 +22,11 @@ class Settings(BaseSettings):
 
     jwt_secret_key: str = Field(default="dev-only-change-me-in-production-32-chars-min", alias="JWT_SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
-    jwt_expires_minutes: int = Field(default=60 * 24, alias="JWT_EXPIRES_MINUTES")
+    jwt_expires_minutes: int = Field(default=30, alias="JWT_EXPIRES_MINUTES")
+    refresh_token_expires_days: int = Field(default=30, alias="REFRESH_TOKEN_EXPIRES_DAYS")
     cookie_secure: bool = Field(default=False, alias="COOKIE_SECURE")
     cookie_name: str = Field(default="devspace_session", alias="COOKIE_NAME")
+    refresh_cookie_name: str = Field(default="devspace_refresh", alias="REFRESH_COOKIE_NAME")
 
     cors_origins: str = Field(default="http://localhost:3000", alias="CORS_ORIGINS")
 

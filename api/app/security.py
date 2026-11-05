@@ -44,6 +44,16 @@ def create_access_token(subject: str) -> str:
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
+def create_refresh_token() -> tuple[str, str]:
+    """Return (raw_token, token_hash). Only the hash is ever stored."""
+    raw = secrets.token_urlsafe(48)
+    return raw, hash_refresh_token(raw)
+
+
+def hash_refresh_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
 def decode_access_token(token: str) -> str | None:
     settings = get_settings()
     try:

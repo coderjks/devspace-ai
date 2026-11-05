@@ -78,6 +78,7 @@ class User(Base):
     standups: Mapped[list["Standup"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     repositories: Mapped[list["Repository"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     certificates: Mapped[list["Certificate"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Enrollment(Base):
@@ -436,3 +437,25 @@ class Certificate(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="certificates")
+
+
+class RefreshToken(Base):
+    """Rotating refresh token. Only the SHA-256 hash of the raw token is
+    stored, so a database leak cannot be replayed as a live session.
+
+    Rotation: every refresh revokes the presented row and points it at its
+    replacement (``replaced_by_id``). Presenting an already-revoked token is
+    treated as reuse/theft and revokes the user's whole token family.
+    """
+
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    replaced_by_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="refresh_tokens")

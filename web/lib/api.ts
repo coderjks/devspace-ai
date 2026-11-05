@@ -39,12 +39,73 @@ function requestKey(path: string, headers: Record<string, string>): string {
   return `${hashToken(JSON.stringify(headers))}:${path}`;
 }
 
-async function doFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+const NO_REFRESH_PATHS = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/refresh",
+  "/api/auth/logout",
+];
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshAccessToken(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) return false;
+      const data = (await res.json().catch(() => ({}))) as { access_token?: string };
+      if (!data.access_token) return false;
+      localStorage.setItem("devspace_token", data.access_token);
+      clearApiCache();
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
+function handleSessionExpired(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("devspace_token");
+  clearApiCache();
+  if (window.location.pathname !== "/login") {
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `/login?expired=1&next=${next}`;
+  }
+}
+
+function rawFetch(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
     ...init,
     credentials: "include",
     headers: { "Content-Type": "application/json", ...authHeaders(), ...(init?.headers ?? {}) },
   });
+}
+
+async function fetchWithRefresh(path: string, init?: RequestInit): Promise<Response> {
+  let res = await rawFetch(path, init);
+  const skipRefresh = NO_REFRESH_PATHS.some((p) => path.startsWith(p));
+  if (res.status === 401 && !skipRefresh && typeof window !== "undefined") {
+    if (await tryRefreshAccessToken()) {
+      res = await rawFetch(path, init);
+    } else {
+      handleSessionExpired();
+    }
+  }
+  return res;
+}
+
+async function doFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetchWithRefresh(path, init);
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(typeof data.detail === "string" ? data.detail : `Request failed (${res.status})`);
